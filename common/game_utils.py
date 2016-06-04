@@ -6,7 +6,7 @@ from functools import wraps
 from logging import getLogger
 
 from common.move_types import Move
-from common.game_session import rest_actions
+
 
 logger = getLogger()
 
@@ -20,6 +20,10 @@ __all__ = ['TimeOutExceeded', 'factory_action_decorator', 'session_method_profil
 class TimeOutExceeded(Exception):
     def __init__(self, message):
         super(TimeOutExceeded, self).__init__(message)
+
+
+class RestActions:
+    rest_actions = []
 
 
 def factory_action_decorator(func):
@@ -48,7 +52,7 @@ def session_method_profiler_decorator(func):
 
 
 def rest_action_decorator(func):
-    rest_actions.append(func.__name__)
+    RestActions().rest_actions.append(func.__name__)
 
     @wraps(func)
     def wrapper(game_session, *args, **kwargs):

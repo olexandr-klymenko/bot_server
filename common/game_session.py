@@ -3,11 +3,9 @@ from uuid import uuid1
 from random import choice
 from itertools import chain
 
+from common.game_utils import rest_action_decorator, RestActions
 
 logger = getLogger()
-
-
-rest_actions = []
 
 
 class GameSession:
@@ -20,10 +18,14 @@ class GameSession:
         self.participant_factory = participant_factory
         self.tick_time = None
 
+    @rest_action_decorator
+    def info(self):
+        return RestActions().rest_actions
+
     def run_rest_action(self, func_name, func_args):
-        logger.debug("Available rest actions: %s" % rest_actions)
+        logger.debug("Available rest actions: %s" % RestActions().rest_actions)
         logger.debug("Rest action request: %s %s" % (func_name, func_args))
-        if func_name in rest_actions:
+        if func_name in RestActions().rest_actions:
             func = getattr(self, func_name)
             return func(*func_args)
         return "Rest action is not available"
@@ -31,6 +33,7 @@ class GameSession:
     def is_paused(self):
         return self.paused
 
+    @rest_action_decorator
     def pause(self):
         if not self.is_paused():
             self.paused = True
@@ -39,6 +42,7 @@ class GameSession:
             return message
         return "Game session is already paused"
 
+    @rest_action_decorator
     def resume(self):
         if self.is_paused():
             self.paused = False
@@ -47,9 +51,11 @@ class GameSession:
             return message
         return "Game session is already resumed"
 
+    @rest_action_decorator
     def get_board_size(self):
         return self.game_board.size
 
+    @rest_action_decorator
     def check_user_name(self, name):
         return name in [participant.name for _, participant in self.registry.items()]
 
@@ -76,6 +82,7 @@ class GameSession:
             self.game_board.update_board(cell=artifact_cell, cell_type=cell_type)
         return spawned_cells
 
+    @rest_action_decorator
     def set_tick_time(self, tick_time):
         try:
             new_tick_time = float(tick_time)

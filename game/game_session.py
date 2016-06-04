@@ -24,32 +24,12 @@ class LodeRunnerGameSession(GameSession):
         self.tick_time = TICK_TIME
 
     @rest_action_decorator
-    def pause(self):
-        return super().pause()
-
-    @rest_action_decorator
-    def resume(self):
-        return super().resume()
-
-    @rest_action_decorator
     def add_guards(self, guards_number):
         self.add_ai_objects(ai_number=guards_number, ai_type=GUARD)
 
     @rest_action_decorator
     def remove_guards(self, guards_number):
         self.remove_ai_objects(ai_number=guards_number, ai_type=GUARD)
-
-    @rest_action_decorator
-    def get_board_size(self):
-        return super().get_board_size()
-
-    @rest_action_decorator
-    def check_user_name(self, name):
-        return super().check_user_name(name)
-
-    @rest_action_decorator
-    def set_tick_time(self, tick_time):
-        return super().set_tick_time(tick_time)
 
     @property
     def gold_cells(self):
