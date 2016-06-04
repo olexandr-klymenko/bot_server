@@ -1,0 +1,3 @@
+* Admin page for controlling the game
+
+* create unittests
