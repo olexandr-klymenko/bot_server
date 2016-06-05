@@ -56,7 +56,7 @@ class GameSession:
 
     @rest_action_decorator
     def check_user_name(self, name):
-        return name in [participant.name for _, participant in self.registry.items()]
+        return name in [participant.client_info for _, participant in self.registry.items()]
 
     def add_ai_objects(self, ai_number, ai_type):
         current_ai_number = self.get_participants_number(ai_type)
@@ -181,3 +181,7 @@ class GameSession:
         for participant_object in self._participants:
             if participant_object.get_name() == name:
                 return participant_object.get_id()
+
+    def get_cell_by_name(self, name):
+        participant_obj = self.registry[self.get_participant_id_by_name(name)]
+        return participant_obj.get_cell()

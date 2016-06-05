@@ -22,7 +22,7 @@ def main():
         if cmd_args.spectator:
             user_option = ''
         else:
-            user_option = "?user=%s" % cmd_args.name
+            user_option = "?user=%s" % cmd_args.client_info
         factory = WebSocketClientFactory('ws://127.0.0.1:9000%s' % user_option)
         factory.protocol = WebSocketClientProtocol
 

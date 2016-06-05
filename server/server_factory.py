@@ -9,6 +9,7 @@ from game_config import *
 from common.game_utils import factory_action_decorator, TimeOutExceeded
 from game.game_session import LodeRunnerGameSession
 from game.game_utils import get_formatted_scores, get_formatted_names
+from game.cell_types import SPECTATOR, PLAYER, GUARD
 
 
 logger = getLogger()
@@ -59,15 +60,17 @@ class BroadcastServerFactory(WebSocketServerFactory):
 
     @factory_action_decorator
     def register_client(self, client):
-        if not self.game_session.is_player_name_in_registry(client.name):
-            client_id = uuid1()
-            self.clients.update({client_id: client})
-            if client.name:
-                self.game_session.register_participant(client_id=client_id, name=client.name)
-                logger.info("Registered Player '{}', id: '{}', client: '{}'".format(client.name, client_id,
-                                                                                    client.peer))
-            else:
-                logger.info("Registered Spectator client {}, id: '{}'".format(client.peer, client_id))
+        client_id = uuid1()
+        self.clients.update({client_id: client})
+        if client.client_info['client_type'] == SPECTATOR:
+            logger.info("Registered Spectator client {}, id: '{}'".format(client.peer, client_id))
+        elif self.game_session.is_player_name_in_registry(client.client_info['name']):
+            logger.error("Client with id % is already registered")
+        elif client.client_info['client_type'] == PLAYER:
+            self.game_session.register_participant(client_id=client_id, name=client.client_info['name'])
+            logger.info("Registered Player '{}', id: '{}', client: '{}'".format(client.client_info['name'],
+                                                                                client_id,
+                                                                                client.peer))
 
     @factory_action_decorator
     def unregister(self, client):
@@ -75,16 +78,16 @@ class BroadcastServerFactory(WebSocketServerFactory):
             client_id = self.get_client_id(client)
             logger.info("Unregistered client '{}' '{}'".format(client.peer, client_id))
             self.clients.pop(client_id)
-            if client.name:
+            if not client.client_info['client_type'] == SPECTATOR:
                 self.game_session.unregister_participant(client_id)
 
     @factory_action_decorator
     def process_action(self, client, action):
-        if client.name:
+        if not client.client_info['client_type'] == SPECTATOR:
             logger.debug("From player '{player}', id: '{id}' received action '{action}'".
                          format(action=action,
-                                player=client.name,
-                                id=self.game_session.get_participant_id_by_name(client.name)))
+                                player=client.client_info['name'],
+                                id=self.game_session.get_participant_id_by_name(client.client_info['name'])))
             self.game_session.process_action(action=action, player_id=self.get_client_id(client))
 
     def get_client_id(self, client):

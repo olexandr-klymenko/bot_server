@@ -3,6 +3,7 @@ from datetime import datetime
 
 from autobahn.asyncio.websocket import WebSocketServerProtocol
 
+from game.cell_types import PLAYER, GUARD, SPECTATOR
 
 logger = getLogger()
 
@@ -25,8 +26,9 @@ class BroadcastServerProtocol(WebSocketServerProtocol):
         self.factory.unregister(self)
 
     @property
-    def name(self):
+    def client_info(self):
         if 'user' in self.http_request_params:
-            return self.http_request_params['user'][0]
-        else:
-            return ''
+            return {'client_type': PLAYER, 'name': self.http_request_params['user'][0]}
+        if 'guard' in self.http_request_params:
+            return {'client_type': GUARD, 'name': self.http_request_params['guard'][0]}
+        return {'client_type': SPECTATOR, 'name': ''}

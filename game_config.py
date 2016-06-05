@@ -1,6 +1,7 @@
 from os.path import join
 
 GAME_SERVER_WEB_SOCKET_URL = u"ws://0.0.0.0:%s"
+INNER_WEB_SOCKET_URL = u"ws://127.0.0.1:%s?user=%s"
 GAME_SERVER_WEB_SOCKET_PORT = '9000'
 TEMPLATES_DIR = 'templates'
 REST_ROOT = 'rest'
@@ -8,7 +9,7 @@ FRONTEND_PORT = 8080
 
 SERVER_LOG_FILE = join('logs', 'server.log')
 CLIENT_LOG_FILE = join('logs', 'client.log')
-LOG_TO_FILE = False
+LOG_TO_FILE = True
 MAX_LOG_BYTES = 1048576
 BACKUP_COUNT = 3
 

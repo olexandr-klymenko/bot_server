@@ -9,6 +9,7 @@ __all__ = ['PLAYER', 'GUARD', 'CellType', 'Drill', 'CellGroups', 'DRILL_SCENARIO
 
 PLAYER = 'Player'
 GUARD = 'Guard'
+SPECTATOR = 'Spectator'
 
 
 class CellType(CharCode):

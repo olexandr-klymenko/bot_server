@@ -7,6 +7,7 @@ from server.server_protocol import BroadcastServerProtocol
 from server.web_server import WebServer
 from server.server_factory import BroadcastServerFactory
 from game_config import *
+from game.guards_factory import run_guards
 
 
 def main():
@@ -20,6 +21,8 @@ def main():
     loop = asyncio.get_event_loop()
     game_ws_server = loop.run_until_complete(loop.create_server(game_factory, '0.0.0.0', cmd_args.port))
 
+    guard_client = run_guards(loop, cmd_args.port, game_factory.game_session)
+
     web_app = WebServer(loop, game_factory.game_session)
     web_server = loop.run_until_complete(loop.create_server(web_app.make_handler(), '0.0.0.0', FRONTEND_PORT))
 
@@ -28,6 +31,7 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        guard_client.close()
         game_ws_server.close()
         web_server.close()
         loop.close()
