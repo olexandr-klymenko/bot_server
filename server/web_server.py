@@ -53,5 +53,3 @@ class WebServer(Application):
         result = self.game_session.run_rest_action(func_name, func_args)
         return Response(text=str(result))
 
-        # func = getattr(self.game_session, func_name)
-        # return Response(text=str(func(*func_args)))

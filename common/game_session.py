@@ -23,7 +23,6 @@ class GameSession:
         return RestActions().rest_actions
 
     def run_rest_action(self, func_name, func_args):
-        logger.debug("Available rest actions: %s" % RestActions().rest_actions)
         logger.debug("Rest action request: %s %s" % (func_name, func_args))
         if func_name in RestActions().rest_actions:
             func = getattr(self, func_name)

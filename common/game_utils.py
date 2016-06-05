@@ -14,7 +14,7 @@ logger = getLogger()
 __all__ = ['TimeOutExceeded', 'factory_action_decorator', 'session_method_profiler_decorator',
            'rest_action_decorator', 'get_move_point_cell', 'get_modified_cell', 'get_board_size',
            'get_index_from_cell', 'get_upper_cell', 'get_lower_cell', 'get_left_cell', 'get_right_cell',
-           'get_wave_age_info', 'get_route', 'get_move_changes', 'get_move_action']
+           'get_wave_age_info', 'get_route', 'get_move_changes', 'get_move_action', 'coroutine']
 
 
 class TimeOutExceeded(Exception):
@@ -59,6 +59,15 @@ def rest_action_decorator(func):
         return func(game_session, *args, **kwargs)
 
     return wrapper
+
+
+def coroutine(func):
+    @wraps(func)
+    def start(*args, **kwargs):
+        res = func(*args, **kwargs)
+        res.__next__()
+        return res
+    return start
 
 
 def get_move_point_cell(cell, move):
@@ -123,6 +132,7 @@ def get_route(players_cells, wave_age_info, joints_info):
 
 def get_move_changes(move):
     move_changes = {
+            None:       (0, 0),
             Move.Right: (1, 0),
             Move.Left: (-1, 0),
             Move.Down: (0, 1),

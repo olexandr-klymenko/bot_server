@@ -197,19 +197,19 @@ class LodeRunnerGameSession(GameSession):
 
     @property
     def scores(self):
-        return {player_object.name: player_object.scores['permanent'] for player_object in self._players}
+        return {player_object.name: player_object.scores['permanent'] for player_object in self.players}
 
     @property
-    def _players(self):
+    def players(self):
         return [participant_object for participant_object in self._participants
                 if participant_object.get_type() == PLAYER]
 
     @property
     def players_cells(self):
-        return {player_object.name: player_object.cell for player_object in self._players}
+        return {player_object.name: player_object.cell for player_object in self.players}
 
     def is_player_name_in_registry(self, name):
-        return name in [player_object.name for player_object in self._players]
+        return name in [player_object.name for player_object in self.players]
 
     def move_guards(self):
         for guard_object in self._guards:
@@ -223,10 +223,10 @@ class LodeRunnerGameSession(GameSession):
                 if participant_object.get_type() == GUARD]
 
     def _get_guard_move_action(self, cell):
-        if self._players:
+        if self.players:
             joints_info = self.game_board.joints_info
             wave_age_info = get_wave_age_info(cell, joints_info)
-            players_cells = [player_object.cell for player_object in self._players]
+            players_cells = [player_object.cell for player_object in self.players]
             next_cell = get_route(players_cells, wave_age_info, joints_info)
 
             if next_cell:

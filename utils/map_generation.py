@@ -4,7 +4,7 @@ from itertools import chain
 from functools import wraps
 
 from game.board_blocks import board_block
-from game_config import BOARD_BLOCKS_SIZE
+from game_config import BOARD_BLOCKS_NUMBER
 from common.game_board import get_board_size
 
 
@@ -21,9 +21,9 @@ def get_generated_board():
     board_blocks = []
     block_matrix = get_block_matrix(board_block)
     previous_func = None
-    for vert_idx in range(BOARD_BLOCKS_SIZE):
+    for vert_idx in range(BOARD_BLOCKS_NUMBER):
         current_layer_blocks = []
-        for horiz_idx in range(BOARD_BLOCKS_SIZE):
+        for horiz_idx in range(BOARD_BLOCKS_NUMBER):
             transformation_function = get_transformed_block_matrix(previous_func)
             current_layer_blocks.append(transformation_function(block_matrix))
             previous_func = transformation_function

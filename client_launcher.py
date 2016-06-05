@@ -6,7 +6,7 @@ from autobahn.asyncio.websocket import WebSocketClientFactory, WebSocketClientPr
 
 from game_config import *
 from utils.configure_logging import setup_logging
-from client.client_prototype import BroadcastClientProtocol
+from client.client_protocol import BroadcastClientProtocol
 
 
 NAMES = ['Arny', 'Bob', 'Charlie', 'Dick', 'Eva', 'Fred', 'Greg', 'Harry', 'Irena', 'Jack', 'Kat']
@@ -36,9 +36,6 @@ def main():
         loop.run_forever()
     except KeyboardInterrupt:
         pass
-    except WebSocketClientDisconnect:
-        loop.close()
-        run_loop(loop)
     finally:
         loop.close()
 
