@@ -42,10 +42,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
         logger.debug("Broadcasting data for websocket clients ...")
         for client_id, client in self.clients.items():
             logger.debug("Sending broadcast message to {client_type} {name}".format(**client.client_info))
-            if client.client_info['client_type'] == GUARD:
-                client.sendMessage(''.encode('utf8'))
-            else:
-                client.sendMessage(self.game_session.get_board_string(client_id).encode('utf8'))
+            client.sendMessage(self.game_session.get_board_string(client_id).encode('utf8'))
 
             if client.websocket_origin:
                 score_message = get_formatted_scores(self.game_session.scores)
