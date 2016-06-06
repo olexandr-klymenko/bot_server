@@ -40,7 +40,7 @@ class LodeRunnerGameSession(GameSession):
         spawned_cells = self.spawn_artifacts(CellType.Gold, number)
         logger.debug("Spawned gold cells %s" % spawned_cells)
 
-    def register_participant(self, client_id, name, participant_type=PLAYER):
+    def register_participant(self, client_id, name, participant_type):
         super().register_participant(client_id, name, participant_type)
 
     def process_action(self, action, player_id):

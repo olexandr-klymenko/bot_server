@@ -4,6 +4,7 @@ from random import choice
 from itertools import chain
 
 from common.game_utils import rest_action_decorator, RestActions
+from game_config import *
 
 logger = getLogger()
 
@@ -56,13 +57,13 @@ class GameSession:
 
     @rest_action_decorator
     def check_user_name(self, name):
-        return name in [participant.client_info for _, participant in self.registry.items()]
+        return name in [participant.name for _, participant in self.registry.items()]
 
     def add_ai_objects(self, ai_number, ai_type):
         current_ai_number = self.get_participants_number(ai_type)
         for index in range(int(ai_number)):
-            self.register_participant(client_id=uuid1(), name="AI_%s" % str(current_ai_number + index),
-                                      participant_type=ai_type)
+            guard_name = "%s%s" % (GUARD_NAME_PREFIX, str(current_ai_number + index))
+            self.register_participant(client_id=uuid1(), name=guard_name, participant_type=ai_type)
 
     def get_participants_number(self, participant_type):
         return len([el for el in self._participants if el.get_type() == participant_type])
@@ -185,3 +186,8 @@ class GameSession:
     def get_cell_by_name(self, name):
         participant_obj = self.registry[self.get_participant_id_by_name(name)]
         return participant_obj.get_cell()
+
+    def get_participant_obj_by_name(self, name):
+        for participant_object in self._participants:
+            if participant_object.get_name() == name:
+                return participant_object

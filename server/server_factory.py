@@ -26,19 +26,26 @@ class BroadcastServerFactory(WebSocketServerFactory):
 
     def tick(self):
         if not self.game_session.is_paused():
+            start_time = datetime.now()
             self.process_gravity()
             self.play_drill_scenarios()
             self.move_guards()
             self.check_inactivity()
             self.broadcast()
             self.game_session.allow_participants_action()
+            execution_time = datetime.now() - start_time
+            logger.debug("Tick execution time: %s" % execution_time)
         self.loop.call_later(self.game_session.tick_time, self.tick)
 
     @factory_action_decorator
     def broadcast(self):
         logger.debug("Broadcasting data for websocket clients ...")
         for client_id, client in self.clients.items():
-            client.sendMessage(self.game_session.get_board_string(client_id).encode('utf8'))
+            logger.debug("Sending broadcast message to {client_type} {name}".format(**client.client_info))
+            if client.client_info['client_type'] == GUARD:
+                client.sendMessage(''.encode('utf8'))
+            else:
+                client.sendMessage(self.game_session.get_board_string(client_id).encode('utf8'))
 
             if client.websocket_origin:
                 score_message = get_formatted_scores(self.game_session.scores)
@@ -66,11 +73,12 @@ class BroadcastServerFactory(WebSocketServerFactory):
             logger.info("Registered Spectator client {}, id: '{}'".format(client.peer, client_id))
         elif self.game_session.is_player_name_in_registry(client.client_info['name']):
             logger.error("Client with id % is already registered")
-        elif client.client_info['client_type'] == PLAYER:
-            self.game_session.register_participant(client_id=client_id, name=client.client_info['name'])
-            logger.info("Registered Player '{}', id: '{}', client: '{}'".format(client.client_info['name'],
-                                                                                client_id,
-                                                                                client.peer))
+        elif client.client_info['client_type'] in [PLAYER, GUARD]:
+            self.game_session.register_participant(client_id=client_id, name=client.client_info['name'],
+                                                   participant_type=client.client_info['client_type'])
+            logger.info("Registered {} '{}', id: '{}', client: '{}'".format(client.client_info['client_type'],
+                                                                            client.client_info['name'],
+                                                                            client_id, client.peer))
 
     @factory_action_decorator
     def unregister(self, client):
@@ -84,9 +92,10 @@ class BroadcastServerFactory(WebSocketServerFactory):
     @factory_action_decorator
     def process_action(self, client, action):
         if not client.client_info['client_type'] == SPECTATOR:
-            logger.debug("From player '{player}', id: '{id}' received action '{action}'".
-                         format(action=action,
-                                player=client.client_info['name'],
+            logger.debug("From {participant} '{name}', id: '{id}' received action '{action}'".
+                         format(participant=client.client_info['client_type'],
+                                action=action,
+                                name=client.client_info['name'],
                                 id=self.game_session.get_participant_id_by_name(client.client_info['name'])))
             self.game_session.process_action(action=action, player_id=self.get_client_id(client))
 
