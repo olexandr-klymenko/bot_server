@@ -5,6 +5,7 @@ from itertools import chain
 
 from common.game_utils import rest_action_decorator, RestActions
 from game_config import *
+from utils.map_generation import get_generated_board
 
 logger = getLogger()
 
@@ -82,6 +83,9 @@ class GameSession:
             self.game_board.update_board(cell=artifact_cell, cell_type=cell_type)
         return spawned_cells
 
+    def spawn_gold_cells(self):
+        pass
+
     @rest_action_decorator
     def set_tick_time(self, tick_time):
         try:
@@ -90,6 +94,20 @@ class GameSession:
             return "Tick time has been set to %s sec" % new_tick_time
         except ValueError as e:
             return "Could't set tick time: %s" % str(e)
+
+    @rest_action_decorator
+    def regenerate_game_board(self):
+        self.pause()
+        self.scenarios = {}
+        new_board_string = get_generated_board()
+        self.game_board.__init__(new_board_string)
+        free_cells = self._get_free_to_spawn_cells()
+        for participant in self._participants:
+            cell = choice(free_cells)
+            participant.set_cell(cell)
+        self.artifacts = []
+        self.spawn_gold_cells(GOLD_CELLS_NUMBER)
+        self.resume()
 
     def _get_free_to_spawn_cells(self):
         empty_cells = self.game_board.get_empty_cells()

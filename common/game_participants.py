@@ -37,3 +37,6 @@ class ParticipantObject(object):
 
     def disallow_action(self):
         self.is_allowed_to_act = False
+
+    def set_cell(self, cell):
+        self.cell = cell
