@@ -5,6 +5,7 @@ from random import choice
 from common.game_session import GameSession
 from common.game_utils import *
 from common.move_types import Move
+from game.game_participants import Player, Guard
 from game.cell_types import CellType, Drill, PLAYER, GUARD, DRILL_SCENARIO
 from game.game_board import LodeRunnerGameBoard
 from game.game_utils import get_drill_vector, delete_empty_value_keys
