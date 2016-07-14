@@ -1,19 +1,12 @@
 from logging import getLogger
-import sys
-import inspect
 
+import game_config
 from common.game_participants import ParticipantObject
 from game.game_utils import get_random_direction
-import game_config
+
+__all__ = ['Player', 'Guard']
 
 logger = getLogger()
-
-
-class ParticipantFactory(object):
-    @classmethod
-    def Create(cls, participant_id, participant_type, cell, name):
-        participant_class = dict(inspect.getmembers(sys.modules[__name__], inspect.isclass))[participant_type]
-        return participant_class(participant_id, cell, name)
 
 
 class LodeRunnerParticipantObject(ParticipantObject):
@@ -52,5 +45,4 @@ class Player(LodeRunnerParticipantObject):
 
 
 class Guard(LodeRunnerParticipantObject):
-    def __init__(self, player_id, cell, name):
-        super().__init__(participant_id=player_id, cell=cell, name=name)
+    pass

@@ -1,7 +1,7 @@
-from logging import getLogger
-from uuid import uuid1
-from random import choice
 from itertools import chain
+from logging import getLogger
+from random import choice
+from uuid import uuid1
 
 from common.game_utils import rest_action_decorator, RestActions
 from game_config import *
@@ -11,13 +11,12 @@ logger = getLogger()
 
 
 class GameSession:
-    def __init__(self, participant_factory):
+    def __init__(self):
         self.game_board = None
         self.artifacts = []
         self.registry = {}
         self.scenarios = {}
         self.paused = False
-        self.participant_factory = participant_factory
         self.tick_time = None
 
     @rest_action_decorator
@@ -84,7 +83,7 @@ class GameSession:
         return spawned_cells
 
     def spawn_gold_cells(self):
-        pass
+        raise NotImplementedError
 
     @rest_action_decorator
     def set_tick_time(self, tick_time):
@@ -126,13 +125,16 @@ class GameSession:
             participant_object = self._get_participant_object_by_id(client_id)
             participant_object.re_spawn(cell)
         else:
-            participant_object = self.participant_factory.Create(participant_id=client_id,
-                                                                 participant_type=participant_type,
-                                                                 cell=cell, name=name)
+            participant_object = self.get_participant(participant_id=client_id, participant_type=participant_type,
+                                                      cell=cell, name=name)
             self.registry.update({client_id: participant_object})
             participant_object = self._get_participant_object_by_id(client_id)
 
         self._update_participant_board_cell(participant_object)
+
+    @classmethod
+    def get_participant(cls, participant_id, participant_type, cell, name):
+        raise NotImplementedError
 
     def _update_participant_board_cell(self, participant_object):
         cell = participant_object.get_cell()
@@ -157,7 +159,7 @@ class GameSession:
             return participant_object.get_cell()
 
     def can_process_action(self, player_id, action):
-        return True
+        raise NotImplementedError
 
     def _get_participant_object_by_id(self, participant_id):
         if participant_id in self.registry:
@@ -165,7 +167,7 @@ class GameSession:
         return ''
 
     def _can_participant_get_into_cell(self, participant_object, move_action, next_cell):
-        return True
+        raise NotImplementedError
 
     def _is_participant_in_cell(self, cell, participant_type):
         return cell in [participant_object.get_cell() for participant_object in self._participants
@@ -182,7 +184,7 @@ class GameSession:
         return dict(chain.from_iterable([player_scenarios.items() for player_scenarios in self.scenarios.values()]))
 
     def _process_move(self, move_action, participant_object):
-        participant_object.disallow_action()
+        raise NotImplementedError
 
     def _get_participant_object_by_cell(self, cell):
         for participant_object in self._participants:

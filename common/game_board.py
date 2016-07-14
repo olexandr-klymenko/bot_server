@@ -70,4 +70,4 @@ class GameBoard:
             return False
 
     def get_participant_on_cell_type(self, cell, participant_type, direction):
-        return ''
+        raise NotImplementedError

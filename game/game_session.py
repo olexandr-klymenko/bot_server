@@ -1,23 +1,22 @@
+from copy import deepcopy
 from logging import getLogger
 from random import choice
-from copy import deepcopy
 
-from utils.map_generation import get_generated_board
 from common.game_session import GameSession
 from common.game_utils import *
 from common.move_types import Move
-from game.game_participants import ParticipantFactory
-from game.game_utils import get_drill_vector, delete_empty_value_keys
 from game.cell_types import CellType, Drill, PLAYER, GUARD, DRILL_SCENARIO
 from game.game_board import LodeRunnerGameBoard
+from game.game_utils import get_drill_vector, delete_empty_value_keys
 from game_config import GOLD_CELLS_NUMBER, GUARDS_NUMBER, TICK_TIME
+from utils.map_generation import get_generated_board
 
 logger = getLogger()
 
 
 class LodeRunnerGameSession(GameSession):
     def __init__(self):
-        super().__init__(ParticipantFactory)
+        super().__init__()
         self.game_board = LodeRunnerGameBoard(get_generated_board())
         self.spawn_gold_cells(GOLD_CELLS_NUMBER)
         self.add_guards(GUARDS_NUMBER)
@@ -40,8 +39,9 @@ class LodeRunnerGameSession(GameSession):
         spawned_cells = self.spawn_artifacts(CellType.Gold, number)
         logger.debug("Spawned gold cells %s" % spawned_cells)
 
-    def register_participant(self, client_id, name, participant_type):
-        super().register_participant(client_id, name, participant_type)
+    @classmethod
+    def get_participant(cls, participant_id, participant_type, cell, name):
+        return eval(participant_type)(participant_id, cell, name)
 
     def process_action(self, action, player_id):
         player_object = self._get_participant_object_by_id(player_id)
