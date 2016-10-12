@@ -2,7 +2,7 @@ from os.path import join
 
 GAME_SERVER_WEB_SOCKET_URL = u"ws://0.0.0.0:%s"
 GUARD_WEB_SOCKET_URL = u"ws://127.0.0.1:%s?guard=%s"
-GAME_SERVER_WEB_SOCKET_PORT = '9000'
+GAME_SERVER_WEB_SOCKET_PORT = 9000
 TEMPLATES_DIR = 'templates'
 REST_ROOT = 'rest'
 FRONTEND_PORT = 8080

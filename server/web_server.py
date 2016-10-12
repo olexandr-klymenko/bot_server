@@ -43,8 +43,8 @@ class WebServer(Application):
 
     @asyncio.coroutine
     def query(self, request):
-        func_name = request._splitted_path.path.replace('/%s/' % REST_ROOT, '')
-        func_args = request._splitted_path.query
+        func_name = request.path_qs.replace('/%s/' % REST_ROOT, '')
+        func_args = request.query_string
         if func_args:
             func_args = [func_args]
         else:

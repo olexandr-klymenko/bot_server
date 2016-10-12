@@ -82,7 +82,7 @@ class GameSession:
             self.game_board.update_board(cell=artifact_cell, cell_type=cell_type)
         return spawned_cells
 
-    def spawn_gold_cells(self):
+    def spawn_gold_cells(self, number):
         raise NotImplementedError
 
     @rest_action_decorator
