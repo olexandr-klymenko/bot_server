@@ -9,7 +9,8 @@ from utils.configure_logging import setup_logging
 from client.client_protocol import BroadcastClientProtocol
 
 
-NAMES = ['Arny', 'Bob', 'Charlie', 'Dick', 'Eva', 'Fred', 'Greg', 'Harry', 'Irena', 'Jack', 'Kat']
+# NAMES = ['Arny', 'Bob', 'Charlie', 'Dick', 'Eva', 'Fred', 'Greg', 'Harry', 'Irena', 'Jack', 'Kat']
+NAMES = ['Adam']
 
 
 def main():

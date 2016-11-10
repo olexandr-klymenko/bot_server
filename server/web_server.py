@@ -1,16 +1,18 @@
 import asyncio
-from os.path import join
 from os import getcwd
-import jinja2
+from os.path import join
+from logging import getLogger
 
-from aiohttp.web import Application, Response
 import aiohttp_jinja2
+import jinja2
+from aiohttp.web import Application, Response
 
 from game_config import TEMPLATES_DIR, REST_ROOT
 
+logger = getLogger()
+
 
 class WebServer(Application):
-
     def __init__(self, loop, game_session):
         super().__init__(loop=loop)
         self.game_session = game_session
@@ -43,8 +45,9 @@ class WebServer(Application):
 
     @asyncio.coroutine
     def query(self, request):
-        func_name = request.path_qs.replace('/%s/' % REST_ROOT, '')
+        func_name = str(request.rel_url.path).replace('/%s/' % REST_ROOT, '')
         func_args = request.query_string
+        logger.info(func_args)
         if func_args:
             func_args = [func_args]
         else:
@@ -52,4 +55,3 @@ class WebServer(Application):
 
         result = self.game_session.run_rest_action(func_name, func_args)
         return Response(text=str(result))
-

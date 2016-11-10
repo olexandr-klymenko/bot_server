@@ -5,7 +5,7 @@ from common.game_utils import *
 logger = getLogger()
 
 
-BOARD_STRING_HEADER = "board=%s"
+BOARD_STRING_HEADER = "board="
 
 
 class GameBoard:

@@ -1,15 +1,13 @@
 from logging import getLogger
 from copy import deepcopy
 
-from common.game_board import GameBoard
+from common.game_board import GameBoard, BOARD_STRING_HEADER
 from common.game_utils import get_index_from_cell
 
 from game.game_utils import is_pass
 from game.cell_types import CellType, CellGroups, PLAYER
 
 logger = getLogger()
-
-BOARD_STRING_HEADER = "board=%s"
 
 
 class LodeRunnerGameBoard(GameBoard):
@@ -40,7 +38,7 @@ class LodeRunnerGameBoard(GameBoard):
                 board_string += self._get_game_board_cell_type((horizontal, vertical))
         if cell:
             board_string = self._get_hero_board_string(board_string=board_string, cell=cell, direction=direction)
-        board_string = BOARD_STRING_HEADER % board_string
+        board_string = "%s%s" % (BOARD_STRING_HEADER, board_string)
         return board_string
 
     def _get_hero_board_string(self, board_string, cell, direction):

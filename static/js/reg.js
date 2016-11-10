@@ -8,6 +8,7 @@ function check_user_name() {
         if (data == 'False') {
             $(location).attr("href", "/play?user=" + name);
         } else {
+            alert(data);
             alert("User name " + name + " is already registered");
             $("#user").val("");
         }

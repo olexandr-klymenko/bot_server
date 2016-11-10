@@ -14,7 +14,7 @@ logger = getLogger()
 __all__ = ['TimeOutExceeded', 'factory_action_decorator', 'session_method_profiler_decorator',
            'rest_action_decorator', 'get_move_point_cell', 'get_modified_cell', 'get_board_size',
            'get_index_from_cell', 'get_upper_cell', 'get_lower_cell', 'get_left_cell', 'get_right_cell',
-           'get_wave_age_info', 'get_route', 'get_move_changes', 'get_move_action', 'coroutine']
+           'get_wave_age_info', 'get_route', 'get_move_changes', 'get_move_action', 'coroutine', 'RestActions']
 
 
 class TimeOutExceeded(Exception):
