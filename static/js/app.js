@@ -1,18 +1,19 @@
-var game_port = '9000';
-var board_message_re = /^board=(.*)/;
-var score_message_re = /^score=(.*)/;
-var players_message_re = /^players=(.*)/;
-var player_cell_re = /^(\w+),(\d+),(\d+)/;
-var hostname = window.location.hostname;
-var game_board_socket_url = "ws://" + hostname + ":" + game_port + "?user=" + get_url_value('user');
-var cell_size = 20;
-var score_pane_size = 400;
-var score_font = "bold 18px arial";
-var score_font_color = "#000000";
-var player_name_font = "11px arial";
-var player_name_color = "#ffffff";
+const game_port = '9000';
+const board_message_re = /^board=(.*)/;
+const score_message_re = /^score=(.*)/;
+const players_message_re = /^players=(.*)/;
+const player_cell_re = /^(\w+),(\d+),(\d+)/;
+const hostname = window.location.hostname;
+const game_board_socket_url = "ws://" + hostname + ":" + game_port + "?user=" + get_url_value('user');
+const cell_size = 20;
+const score_pane_size = 400;
+const score_font = "bold 18px arial";
+const score_font_color = "#000000";
+const player_name_font = "11px arial";
+const player_name_color = "#ffffff";
+const imagesRoot = "static/images/";
 
-var cell_images_info = {
+const cell_images_info = {
     '=': 'breakable.png',
     '*': 'drill.png',
     '0': 'drill_filled.png',
@@ -48,6 +49,14 @@ var cell_images_info = {
     '#': 'unbreakable.png'
 };
 
+const movesInfo = {
+    'ArrowLeft':    'Left',
+    'ArrowUp':      'Up',
+    'ArrowRight':   'Right',
+    'ArrowDown':    'Down',
+    'KeyZ':         'DrillLeft',
+    'KeyX':         'DrillRight',
+};
 
 function main() {
     $.get("/rest/get_board_size", function (data) {
@@ -108,7 +117,7 @@ function get_cells_info() {
     var cells_info = {};
     for (var index in cell_images_info) {
         cells_info[index] = new Image();
-        cells_info[index].src = "static/images/" + cell_images_info[index]
+        cells_info[index].src = imagesRoot + cell_images_info[index]
     }
     return cells_info
 }
@@ -127,8 +136,21 @@ function show_game_board(incoming_message, ctx, cells_types_info, board_size) {
 function show_scores(incoming_message, canvas_ctx, board_size) {
     var score_message = incoming_message.replace(score_message_re, "$1");
     canvas_ctx.font = score_font;
-    canvas_ctx.clearRect(board_size * cell_size, 0, board_size * cell_size + score_pane_size, board_size * cell_size + cell_size);
-    wrap_text(canvas_ctx, score_message, board_size * cell_size + cell_size, cell_size, score_pane_size, cell_size, score_font_color)
+    canvas_ctx.clearRect(
+        board_size * cell_size,
+        0,
+        board_size * cell_size + score_pane_size,
+        board_size * cell_size + cell_size
+    );
+    wrap_text(
+        canvas_ctx,
+        score_message,
+        board_size * cell_size + cell_size,
+        cell_size,
+        score_pane_size,
+        cell_size,
+        score_font_color
+    )
 }
 
 function wrap_text(context, text, x, y, maxWidth, lineHeight, fillstyle) {
@@ -143,7 +165,7 @@ function wrap_text(context, text, x, y, maxWidth, lineHeight, fillstyle) {
     var words = newLines.split(' ');
     var line = '';
     for(var n = 0; n < words.length; n++) {
-        if(words[n] != 'breakLine'){
+        if(words[n] !== 'breakLine'){
             var testLine = line + words[n] + ' ';
             var metrics = context.measureText(testLine);
             var testWidth = metrics.width;
@@ -165,51 +187,34 @@ function wrap_text(context, text, x, y, maxWidth, lineHeight, fillstyle) {
 }
 
 function show_players_names(incoming_message, canvas_ctx) {
-    var players = incoming_message.replace(players_message_re, "$1").split(' ');
-    for (var index=0; index<players.length; index++) {
-        var player_name = players[index].replace(player_cell_re, "$1");
-        var x = players[index].replace(player_cell_re, "$2");
-        var y = players[index].replace(player_cell_re, "$3");
-        write_player_name(canvas_ctx, player_name, x * cell_size, y * cell_size - 2, player_name_color)
+    let players = incoming_message.replace(players_message_re, "$1").split(' ');
+    for (let index=0; index<players.length; index++) {
+        let player_name = players[index].replace(player_cell_re, "$1");
+        let x = players[index].replace(player_cell_re, "$2");
+        let y = players[index].replace(player_cell_re, "$3");
+        write_player_name(
+            canvas_ctx,
+            player_name,
+            x * cell_size,
+            y * cell_size - 2,
+            player_name_color)
     }
 }
 
 function write_player_name(context, name, x, y, color) {
-    context.fillStyle = color;
     context.font = player_name_font;
+    context.strokeStyle = 'black';
+    context.lineWidth = 2;
+    context.strokeText(name, x, y);
+    context.fillStyle = color;
     context.fillText(name, x, y);
 }
 
 function keyboard_manager(game_board_socket) {
     window.addEventListener('keyup',
-        function(e){
-            switch(e.keyCode) {
-                case 37:
-                    var move = 'Left';
-                    break;
-
-                case 38:
-                    move = 'Up';
-                    break;
-
-                case 39:
-                    move = 'Right';
-                    break;
-
-                case 40:
-                    move = 'Down';
-                    break;
-
-                case 90:
-                    move = 'DrillLeft';
-                    break;
-
-                case 88:
-                    move = 'DrillRight';
-                    break;
-            }
-            if (get_url_value('user') != ''){
-                game_board_socket.send(move)
+        function(event){
+            if (get_url_value('user') !== '' && event.code in movesInfo){
+                game_board_socket.send(movesInfo[event.code])
             }
 
         }

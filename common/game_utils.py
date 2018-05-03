@@ -30,9 +30,7 @@ def factory_action_decorator(func):
     @wraps(func)
     def wrapper(factory, *args, **kwargs):
         start_time = datetime.now()
-        factory.lock_game_server()
         func(factory, *args, **kwargs)
-        factory.unlock_game_server()
         execution_time = datetime.now() - start_time
         logger.debug("%s execution time: %s" % (func.__name__, execution_time))
 
@@ -43,7 +41,11 @@ def session_method_profiler_decorator(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         start_time = datetime.now()
-        ret = func(*args, **kwargs)
+        try:
+            ret = func(*args, **kwargs)
+        except Exception as err:
+            logger.error(str(err))
+            raise
         execution_time = datetime.now() - start_time
         logger.debug("%s execution time: %s" % (func.__name__, execution_time))
         return ret
