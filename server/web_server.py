@@ -1,7 +1,6 @@
-import asyncio
+from logging import getLogger
 from os import getcwd
 from os.path import join
-from logging import getLogger
 
 import aiohttp_jinja2
 import jinja2
@@ -29,22 +28,19 @@ class WebServer(Application):
 
         aiohttp_jinja2.setup(self, loader=jinja2.FileSystemLoader(join(getcwd(), TEMPLATES_DIR)))
 
-    @asyncio.coroutine
-    def play(self, request):
+    async def play(self, request):
         context = {}
         response = aiohttp_jinja2.render_template('index.html', request, context)
         response.headers['Content-Language'] = 'en'
         return response
 
-    @asyncio.coroutine
-    def reg(self, request):
+    async def reg(self, request):
         context = {}
         response = aiohttp_jinja2.render_template('reg.html', request, context)
         response.headers['Content-Language'] = 'en'
         return response
 
-    @asyncio.coroutine
-    def query(self, request):
+    async def query(self, request):
         func_name = str(request.rel_url.path).replace('/%s/' % REST_ROOT, '')
         func_args = request.query_string
         logger.info(func_args)

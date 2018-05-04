@@ -52,7 +52,7 @@ class LodeRunnerGameSession(GameSession):
             elif Drill.is_code_valid(action):
                 self._process_drill(action, player_object)
             else:
-                logger.info("Unknown command '%s' from client '%s'" % (action, player_object.client_info))
+                logger.info("Unknown command '%s' from client '%s'" % (action, repr(player_object)))
 
     def can_process_action(self, player_id, action):
         return not self._is_participant_falling(self._get_participant_object_by_id(player_id))

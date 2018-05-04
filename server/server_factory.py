@@ -108,17 +108,3 @@ class BroadcastServerFactory(WebSocketServerFactory):
     def play_drill_scenarios(self):
         logger.debug("Playing Drill scenarios ...")
         self.game_session.process_drill_scenario()
-
-    def lock_game_server(self):
-        timeout = 0
-        while self.is_locked:
-            sleep(WAIT_FREE_CELL_TICK)
-            timeout += WAIT_FREE_CELL_TICK
-            if timeout > STOP_WAIT_FREE_CELL_TIMEOUT:
-                raise TimeOutExceeded("Game Server Lock Timeout has been exceeded")
-        self.is_locked = True
-        logger.debug("Game server is locked")
-
-    def unlock_game_server(self):
-        self.is_locked = False
-        logger.debug("Game server is unlocked")
