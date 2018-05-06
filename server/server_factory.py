@@ -1,16 +1,14 @@
+from datetime import datetime, timedelta
 from logging import getLogger
 from uuid import uuid1
-from time import sleep
-from datetime import datetime, timedelta
 
 from autobahn.asyncio.websocket import WebSocketServerFactory
 
-from game_config import *
-from common.game_utils import factory_action_decorator, TimeOutExceeded
+from common.game_utils import factory_action_decorator
+from game.cell_types import SPECTATOR, PLAYER, GUARD
 from game.game_session import LodeRunnerGameSession
 from game.game_utils import get_formatted_scores, get_formatted_names
-from game.cell_types import SPECTATOR, PLAYER, GUARD
-
+from game_config import *
 
 logger = getLogger()
 

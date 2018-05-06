@@ -1,14 +1,14 @@
 from copy import deepcopy
 from logging import getLogger
-from random import choice
+from random import choice, shuffle
 
 from common.game_session import GameSession
 from common.game_utils import *
-from common.move_types import Move
 from game.game_participants import Player, Guard
+from common.move_types import Move
 from game.cell_types import CellType, Drill, PLAYER, GUARD, DRILL_SCENARIO
 from game.game_board import LodeRunnerGameBoard
-from game.game_utils import get_drill_vector, delete_empty_value_keys
+from game.game_utils import get_drill_vector, delete_empty_value_keys, randomized_run_decorator
 from game_config import GOLD_CELLS_NUMBER, GUARDS_NUMBER, TICK_TIME
 from utils.map_generation import get_generated_board
 
@@ -213,10 +213,15 @@ class LodeRunnerGameSession(GameSession):
         return name in [player_object.name for player_object in self.players]
 
     def move_guards(self):
+        shuffle(self._guards)
         for guard_object in self._guards:
             if guard_object.is_allowed_to_act:
-                move_action = self._get_guard_move_action(guard_object.get_cell())
-                self._process_move(move_action, guard_object)
+                self.do_move_guard(guard_object)
+
+    @randomized_run_decorator(90)
+    def do_move_guard(self, guard_object):
+        move_action = self._get_guard_move_action(guard_object.get_cell())
+        self._process_move(move_action, guard_object)
 
     @property
     def _guards(self):

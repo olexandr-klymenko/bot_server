@@ -1,16 +1,12 @@
-from logging import getLogger
-from random import choice
 import re
+from logging import getLogger
 
 from autobahn.asyncio.websocket import WebSocketClientProtocol
 
-from common.move_types import Move
-from game.game_utils import Drill
 from common.game_board import BOARD_STRING_HEADER
 from common.game_session import GameSession
-from game.game_board import LodeRunnerGameBoard
 from game.cell_types import *
-
+from game.game_board import LodeRunnerGameBoard
 
 logger = getLogger()
 

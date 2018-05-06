@@ -1,4 +1,4 @@
-from random import choice
+from random import choice, randint
 from logging import getLogger
 
 from common.game_utils import get_upper_cell, get_lower_cell
@@ -65,3 +65,14 @@ def delete_empty_value_keys(info):
 
     for elem in empty_value_keys:
         info.pop(elem)
+
+
+def randomized_run_decorator(percentage):
+
+    def wrapper(func):
+        def inner(*args, **kwargs):
+            is_run = randint(0, 100) < percentage
+            if is_run:
+                return func(*args, **kwargs)
+        return inner
+    return wrapper
