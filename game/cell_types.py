@@ -4,7 +4,7 @@ from common.move_types import CharCode
 
 logger = getLogger()
 
-__all__ = ['PLAYER', 'GUARD', 'CellType', 'Drill', 'CellGroups', 'DRILL_SCENARIO']
+__all__ = ['PLAYER', 'GUARD', 'CellType', 'Drill', 'CellGroups', 'DRILL_SCENARIO', 'CELL_TYPE_COERCION']
 
 
 PLAYER = 'Player'
@@ -71,3 +71,30 @@ class CellGroups(object):
 DRILL_SCENARIO = [CellType.Drill, CellType.Empty, CellType.Empty, CellType.Empty, CellType.Empty, CellType.Empty,
                   CellType.PitFill4, CellType.PitFill3, CellType.PitFill2, CellType.PitFill1,
                   CellType.PitFilled, CellType.DrillableBrick]
+
+
+CELL_TYPE_COERCION = {
+    CellType.Gold: CellType.Empty,
+    CellType.Drill: CellType.DrillableBrick,
+    CellType.PitFill1: CellType.DrillableBrick,
+    CellType.PitFill2: CellType.DrillableBrick,
+    CellType.PitFill3: CellType.DrillableBrick,
+    CellType.PitFill4: CellType.DrillableBrick,
+    CellType.PitFilled: CellType.DrillableBrick,
+    CellType.PlayerLooksLeft: CellType.Empty,
+    CellType.PlayerLooksRight: CellType.Empty,
+    CellType.PlayerOnLadder: CellType.Ladder,
+    CellType.PlayerOnPipeLooksLeft: CellType.Pipe,
+    CellType.PlayerOnPipeLooksRight: CellType.Pipe,
+    CellType.GuardLooksLeft: CellType.Empty,
+    CellType.GuardLooksRight: CellType.Empty,
+    CellType.GuardOnLadder: CellType.Ladder,
+    CellType.GuardOnPipeLooksLeft: CellType.Pipe,
+    CellType.GuardOnPipeLooksRight: CellType.Pipe,
+    CellType.HeroDies: CellType.Empty,
+    CellType.HeroLooksLeft: CellType.Empty,
+    CellType.HeroLooksRight: CellType.Empty,
+    CellType.HeroOnLadder: CellType.Ladder,
+    CellType.HeroOnPipeLooksLeft: CellType.Pipe,
+    CellType.HeroOnPipeLooksRight: CellType.Pipe
+}

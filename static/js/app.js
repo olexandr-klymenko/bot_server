@@ -195,19 +195,21 @@ function show_players_names(incoming_message, canvas_ctx) {
         write_player_name(
             canvas_ctx,
             player_name,
-            x * cell_size,
-            y * cell_size - 2,
+            x,
+            y,
             player_name_color)
     }
 }
 
 function write_player_name(context, name, x, y, color) {
+    let x_real = x * cell_size;
+    let y_real = y * cell_size - 2;
     context.font = player_name_font;
     context.strokeStyle = 'black';
     context.lineWidth = 2;
-    context.strokeText(name, x, y);
+    context.strokeText(name, x_real, y_real);
     context.fillStyle = color;
-    context.fillText(name, x, y);
+    context.fillText(name, x_real, y_real);
 }
 
 function keyboard_manager(game_board_socket) {
