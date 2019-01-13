@@ -120,23 +120,6 @@ class GameSession:
     def _participants(self):
         return [participant_object for participant_object in self.registry.values()]
 
-    def register_participant(self, client_id, name, participant_type):
-        cell = choice(self._get_free_to_spawn_cells())
-        if self._is_participant_id_in_registry(client_id):
-            participant_object = self._get_participant_object_by_id(client_id)
-            participant_object.re_spawn(cell)
-        else:
-            participant_object = self.get_participant(participant_id=client_id, participant_type=participant_type,
-                                                      cell=cell, name=name)
-            self.registry.update({client_id: participant_object})
-            participant_object = self._get_participant_object_by_id(client_id)
-
-        self._update_participant_board_cell(participant_object)
-
-    @classmethod
-    def get_participant(cls, participant_id, participant_type, cell, name):
-        raise NotImplementedError
-
     def _update_participant_board_cell(self, participant_object):
         cell = participant_object.get_cell()
         player_cell_type = self.game_board.get_participant_on_cell_type(cell=cell,

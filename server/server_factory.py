@@ -27,7 +27,6 @@ class BroadcastServerFactory(WebSocketServerFactory):
             start_time = datetime.now()
             self.process_gravity()
             self.play_drill_scenarios()
-            self.move_guards()
             self.check_inactivity()
             self.broadcast()
             self.game_session.allow_participants_action()
@@ -96,11 +95,6 @@ class BroadcastServerFactory(WebSocketServerFactory):
 
     def get_client_id(self, client):
         return dict(zip(self.clients.values(), self.clients.keys()))[client]
-
-    @factory_action_decorator
-    def move_guards(self):
-        logger.debug("Moving Guards ...")
-        self.game_session.move_guards()
 
     @factory_action_decorator
     def play_drill_scenarios(self):

@@ -1,15 +1,15 @@
 from copy import deepcopy
 from logging import getLogger
-from random import choice, shuffle
+from random import choice
 
 from common.game_session import GameSession
 from common.game_utils import *
-from game.game_participants import Player, Guard
 from common.move_types import Move
 from game.cell_types import CellType, Drill, PLAYER, GUARD, DRILL_SCENARIO
 from game.game_board import LodeRunnerGameBoard
-from game.game_utils import get_drill_vector, delete_empty_value_keys, randomized_run_decorator
-from game_config import GOLD_CELLS_NUMBER, GUARDS_NUMBER, TICK_TIME
+from game.game_participants import get_participant
+from game.game_utils import get_drill_vector, delete_empty_value_keys
+from game_config import GOLD_CELLS_NUMBER, TICK_TIME
 from utils.map_generation import get_generated_board
 
 logger = getLogger()
@@ -20,16 +20,7 @@ class LodeRunnerGameSession(GameSession):
         super().__init__()
         self.game_board = LodeRunnerGameBoard(get_generated_board())
         self.spawn_gold_cells(GOLD_CELLS_NUMBER)
-        self.add_guards(GUARDS_NUMBER)
         self.tick_time = TICK_TIME
-
-    @rest_action_decorator
-    def add_guards(self, guards_number):
-        self.add_ai_objects(ai_number=guards_number, ai_type=GUARD)
-
-    @rest_action_decorator
-    def remove_guards(self, guards_number):
-        self.remove_ai_objects(ai_number=guards_number, ai_type=GUARD)
 
     @property
     def gold_cells(self):
@@ -40,9 +31,20 @@ class LodeRunnerGameSession(GameSession):
         spawned_cells = self.spawn_artifacts(CellType.Gold, number)
         logger.debug("Spawned gold cells %s" % spawned_cells)
 
-    @classmethod
-    def get_participant(cls, participant_id, participant_type, cell, name):
-        return eval(participant_type)(participant_id, cell, name)
+    def register_participant(self, client_id, name, participant_type):
+        cell = choice(self._get_free_to_spawn_cells())
+        if self._is_participant_id_in_registry(client_id):
+            participant_object = self._get_participant_object_by_id(client_id)
+            participant_object.re_spawn(cell)
+        else:
+            participant_object = get_participant(participant_id=client_id,
+                                                 participant_type=participant_type,
+                                                 cell=cell,
+                                                 name=name)
+            self.registry.update({client_id: participant_object})
+            participant_object = self._get_participant_object_by_id(client_id)
+
+        self._update_participant_board_cell(participant_object)
 
     def process_action(self, action, player_id):
         player_object = self._get_participant_object_by_id(player_id)
@@ -60,7 +62,7 @@ class LodeRunnerGameSession(GameSession):
     def _is_participant_falling(self, participant_object):
         lower_cell = get_lower_cell(participant_object.get_cell())
         if self._can_participant_get_into_cell(participant_object=participant_object, move_action=Move.Down,
-                                               next_cell=lower_cell)\
+                                               next_cell=lower_cell) \
                 and self._should_participant_fall(participant_object=participant_object, lower_cell=lower_cell):
             return True
         return False
@@ -81,11 +83,11 @@ class LodeRunnerGameSession(GameSession):
         if self.game_board.get_cell_type(next_cell) == CellType.UnbreakableBrick:
             return False
 
-        if self.game_board.get_cell_type(next_cell) == CellType.DrillableBrick\
+        if self.game_board.get_cell_type(next_cell) == CellType.DrillableBrick \
                 and not self._is_cell_in_scenarios(next_cell):
             return False
 
-        if self.game_board.get_cell_type(next_cell) == CellType.DrillableBrick\
+        if self.game_board.get_cell_type(next_cell) == CellType.DrillableBrick \
                 and self._scenarios_info[next_cell][-1] in [CellType.Drill, CellType.DrillableBrick]:
             return False
 
@@ -212,35 +214,10 @@ class LodeRunnerGameSession(GameSession):
     def is_player_name_in_registry(self, name):
         return name in [player_object.name for player_object in self.players]
 
-    def move_guards(self):
-        shuffle(self._guards)
-        for guard_object in self._guards:
-            if guard_object.is_allowed_to_act:
-                self.do_move_guard(guard_object)
-
-    @randomized_run_decorator(90)
-    def do_move_guard(self, guard_object):
-        move_action = self._get_guard_move_action(guard_object.get_cell())
-        self._process_move(move_action, guard_object)
-
     @property
     def _guards(self):
         return [participant_object for participant_object in self._participants
                 if participant_object.get_type() == GUARD]
-
-    def _get_guard_move_action(self, cell):
-        if self.players:
-            joints_info = self.game_board.joints_info
-            wave_age_info = get_wave_age_info(cell, joints_info)
-            players_cells = [player_object.cell for player_object in self.players]
-            next_cell = get_route(players_cells, wave_age_info, joints_info)
-
-            if next_cell:
-                return get_move_action(cell, next_cell)
-            elif joints_info[cell]:
-                return get_move_action(cell, choice(joints_info[cell]))
-
-        return choice(Move.get_valid_codes())
 
     def process_gravity(self):
         logger.debug("Processing Gravity ...")

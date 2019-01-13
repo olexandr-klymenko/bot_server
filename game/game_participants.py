@@ -4,7 +4,7 @@ import game_config
 from common.game_participants import ParticipantObject
 from game.game_utils import get_random_direction
 
-__all__ = ['Player', 'Guard']
+__all__ = ['Player', 'Guard', 'get_participant']
 
 logger = getLogger()
 
@@ -46,3 +46,7 @@ class Player(LodeRunnerParticipantObject):
 
 class Guard(LodeRunnerParticipantObject):
     pass
+
+
+def get_participant(participant_id, participant_type, cell, name):
+    return eval(participant_type)(participant_id, cell, name)
