@@ -14,6 +14,7 @@ logger = getLogger()
 SCORE_STRING_HEADER = "score=%s"
 PLAYERS_STRING_HEADER = "players=%s"
 BOARD_SIZE_HEADER = "size=%d"
+SCORE_DELIMITER = '|'
 
 
 def get_upper_cell(cell):
@@ -50,8 +51,8 @@ def get_drill_vector(drill_action):
 
 
 def get_formatted_scores(scores):
-    return SCORE_STRING_HEADER % '\n'.join('%s: %s' % (key, value)
-                                           for key, value in sorted(scores.items(), key=lambda x: x[1], reverse=True))
+    return SCORE_STRING_HEADER % SCORE_DELIMITER.join('%s: %s' % (key, value)
+                                                      for key, value in sorted(scores.items(), key=lambda x: x[1], reverse=True))
 
 
 def get_formatted_names(players_info):

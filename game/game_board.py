@@ -7,7 +7,7 @@ from game.game_utils import (get_board_size, is_pass, get_index_from_cell, get_l
 
 logger = getLogger()
 
-BOARD_STRING_HEADER = "board="
+BOARD_STRING_HEADER = "BOARD="
 
 
 class LodeRunnerGameBoard:

@@ -1,18 +1,20 @@
 const game_port = '9000';
-const board_message_re = /^board=(.*)/;
-const score_message_re = /^score=(.*)/;
-const players_message_re = /^players=(.*)/;
-const player_cell_re = /^(\w+),(\d+),(\d+)/;
+const BOARD = 'BOARD';
+const SCORE = 'SCORE';
+const PLAYERS = 'PLAYERS';
+const SCORE_DELIMITER = /\|/g;
+const messageRe = /^(\w+)=(.*)/;
+const playerCellRe = /^(\w+),(\d+),(\d+)/;
 const hostname = window.location.hostname;
-const game_board_socket_url = "ws://" + hostname + ":" + game_port + "?user=" + get_url_value('user');
+const url = "ws://" + hostname + ":" + game_port;
+const game_board_socket_url = url + "?client_type=Player&name=" + get_url_value('user');
 const cell_size = 20;
 const score_pane_size = 400;
 const score_font = "bold 18px arial";
 const score_font_color = "#000000";
 const player_name_font = "11px arial";
-const player_name_color = "#ffffff";
+const playerNameColor = "#ffffff";
 const imagesRoot = "static/images/";
-
 const cell_images_info = {
     '=': 'breakable.png',
     '*': 'drill.png',
@@ -49,6 +51,8 @@ const cell_images_info = {
     '#': 'unbreakable.png'
 };
 
+const cells_info = get_cells_info();
+
 const movesInfo = {
     'ArrowLeft':    'Left',
     'ArrowUp':      'Up',
@@ -65,13 +69,13 @@ function main() {
 }
 
 
-function get_url_value(VarSearch){
-    var SearchString = window.location.search.substring(1);
-    var VariableArray = SearchString.split('&');
-    for(var index = 0; index < VariableArray.length; index++){
-        var KeyValuePair = VariableArray[index].split('=');
-        if(KeyValuePair[0] == VarSearch){
-            return KeyValuePair[1];
+function get_url_value(varSearch){
+    let searchString = window.location.search.substring(1);
+    let variableArray = searchString.split('&');
+    for (let index = 0; index < variableArray.length; index++){
+        let keyValuePair = variableArray[index].split('=');
+        if(keyValuePair[0] === varSearch){
+            return keyValuePair[1];
         } else {
             return ''
         }
@@ -79,34 +83,35 @@ function get_url_value(VarSearch){
 }
 
 function websocket_game(board_size) {
-    var game_board_socket = game_board_socket_manager(board_size);
+    let game_board_socket = game_board_socket_manager(board_size);
     keyboard_manager(game_board_socket)
 }
 
 function game_board_socket_manager(board_size) {
-    var game_board_socket = new WebSocket(game_board_socket_url);
-    var canvas_ctx = get_canvas_context(board_size);
+    let game_board_socket = new WebSocket(game_board_socket_url);
+    let canvas_ctx = get_canvas_context(board_size);
 
-    var cells_types_info = get_cells_info();
-    game_board_socket.onmessage = function(event) {
-        var incoming_message = event.data;
+    game_board_socket.onmessage = (event) => {
+        let messageResult = messageRe.exec(event.data);
+        let messageKey = messageResult[1];
+        let messageValue = messageResult[2];
 
-        if(incoming_message.match(board_message_re) != null) {
-            show_game_board(incoming_message, canvas_ctx, cells_types_info, board_size);
+        if(messageKey === BOARD) {
+            show_game_board(messageValue, canvas_ctx, board_size);
 
-        } else if(incoming_message.match(score_message_re) != null) {
-            show_scores(incoming_message, canvas_ctx, board_size);
+        } else if(messageKey === SCORE) {
+            show_scores(messageValue, canvas_ctx, board_size);
 
-        } else if (incoming_message.match(players_message_re) != null) {
-            show_players_names(incoming_message, canvas_ctx);
+        } else if (messageKey === PLAYERS) {
+            show_players_names(messageValue, canvas_ctx);
         }
     };
     return game_board_socket
 }
 
 function get_canvas_context(board_size) {
-    var canvas = document.createElement("canvas");
-    var ctx = canvas.getContext("2d");
+    let canvas = document.createElement("canvas");
+    let ctx = canvas.getContext("2d");
     canvas.width = board_size * cell_size + score_pane_size;
     canvas.height = board_size * cell_size;
     document.body.appendChild(canvas);
@@ -114,27 +119,28 @@ function get_canvas_context(board_size) {
 }
 
 function get_cells_info() {
-    var cells_info = {};
-    for (var index in cell_images_info) {
+    let cells_info = {};
+    for (let index in cell_images_info) {
         cells_info[index] = new Image();
         cells_info[index].src = imagesRoot + cell_images_info[index]
     }
     return cells_info
 }
 
-function show_game_board(incoming_message, ctx, cells_types_info, board_size) {
-    var board_message = incoming_message.replace(board_message_re, "$1");
-    for (var vertical_index=0; vertical_index < board_size; vertical_index++) {
-        for (var horizontal_index=0; horizontal_index < board_size; horizontal_index++) {
-            var current_cell_type = board_message[vertical_index * board_size + horizontal_index];
-            var cell_image = cells_types_info[current_cell_type];
-            ctx.drawImage(cell_image, horizontal_index * cell_size, vertical_index * cell_size);
+function show_game_board(board_message, ctx, board_size) {
+    for (let vertical_index=0; vertical_index < board_size; vertical_index++) {
+        for (let horizontal_index=0; horizontal_index < board_size; horizontal_index++) {
+            let current_cell_type = board_message[vertical_index * board_size + horizontal_index];
+            ctx.drawImage(
+                cells_info[current_cell_type],
+                horizontal_index * cell_size,
+                vertical_index * cell_size
+            );
         }
     }
 }
 
-function show_scores(incoming_message, canvas_ctx, board_size) {
-    var score_message = incoming_message.replace(score_message_re, "$1");
+function show_scores(score_message, canvas_ctx, board_size) {
     canvas_ctx.font = score_font;
     canvas_ctx.clearRect(
         board_size * cell_size,
@@ -144,7 +150,7 @@ function show_scores(incoming_message, canvas_ctx, board_size) {
     );
     wrap_text(
         canvas_ctx,
-        score_message,
+        score_message.replace(SCORE_DELIMITER, "\n"),
         board_size * cell_size + cell_size,
         cell_size,
         score_pane_size,
@@ -153,22 +159,22 @@ function show_scores(incoming_message, canvas_ctx, board_size) {
     )
 }
 
-function wrap_text(context, text, x, y, maxWidth, lineHeight, fillstyle) {
+function wrap_text(context, text, x, y, maxWidth, lineHeight, fillStyle) {
 
-    context.fillStyle = fillstyle;
-    var breaks = text.split('\n');
-    var newLines = "";
-    for(var index = 0; index < breaks.length; index ++){
+    context.fillStyle = fillStyle;
+    let breaks = text.split('\n');
+    let newLines = "";
+    for(let index = 0; index < breaks.length; index ++){
         newLines = newLines + breaks[index] + ' breakLine ';
     }
 
-    var words = newLines.split(' ');
-    var line = '';
-    for(var n = 0; n < words.length; n++) {
+    let words = newLines.split(' ');
+    let line = '';
+    for(let n = 0; n < words.length; n++) {
         if(words[n] !== 'breakLine'){
-            var testLine = line + words[n] + ' ';
-            var metrics = context.measureText(testLine);
-            var testWidth = metrics.width;
+            let testLine = line + words[n] + ' ';
+            let metrics = context.measureText(testLine);
+            let testWidth = metrics.width;
             if (testWidth > maxWidth && n > 0) {
                 context.fillText(line, x, y);
                 line = words[n] + ' ';
@@ -186,18 +192,18 @@ function wrap_text(context, text, x, y, maxWidth, lineHeight, fillstyle) {
     context.fillText(line, x, y);
 }
 
-function show_players_names(incoming_message, canvas_ctx) {
-    let players = incoming_message.replace(players_message_re, "$1").split(' ');
+function show_players_names(message, canvasCtx) {
+    let players = message.split(' ');
     for (let index=0; index<players.length; index++) {
-        let player_name = players[index].replace(player_cell_re, "$1");
-        let x = players[index].replace(player_cell_re, "$2");
-        let y = players[index].replace(player_cell_re, "$3");
+        let playerName = players[index].replace(playerCellRe, "$1");
+        let x = players[index].replace(playerCellRe, "$2");
+        let y = players[index].replace(playerCellRe, "$3");
         write_player_name(
-            canvas_ctx,
-            player_name,
+            canvasCtx,
+            playerName,
             x,
             y,
-            player_name_color)
+            playerNameColor)
     }
 }
 
