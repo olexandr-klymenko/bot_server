@@ -4,9 +4,6 @@ from game.game_utils import get_random_direction
 
 logger = getLogger()
 
-CATCH_Guard_REWARD = 5
-CATCH_Player_REWARD = 100
-
 
 class ParticipantObject(object):
     def __init__(self, participant_id, cell, name):
@@ -77,13 +74,6 @@ class Player(LodeRunnerParticipantObject):
     def pickup_gold(self):
         self.scores['temporary'] += 1
         self.scores['permanent'] += self.scores['temporary']
-
-    def trap_participant(self, participant_object):
-        participant_type = participant_object.get_type()
-        if participant_type == 'Guard':
-            self.scores['permanent'] += CATCH_Player_REWARD
-        else:
-            self.scores['permanent'] += CATCH_Guard_REWARD
 
 
 class Guard(LodeRunnerParticipantObject):
