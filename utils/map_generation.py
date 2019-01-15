@@ -1,15 +1,15 @@
+from functools import wraps
+from itertools import chain
 from logging import getLogger
 from random import choice
-from itertools import chain
-from functools import wraps
 
 from game.board_blocks import board_block
-from game_config import BOARD_BLOCKS_NUMBER
-from common.game_board import get_board_size
-
+from game.game_board import get_board_size
 
 __all__ = ['get_generated_board']
 
+
+BOARD_BLOCKS_NUMBER = 2
 
 logger = getLogger()
 

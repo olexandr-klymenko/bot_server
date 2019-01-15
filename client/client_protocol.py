@@ -3,9 +3,9 @@ from autobahn.asyncio.websocket import WebSocketClientProtocol
 from logging import getLogger
 from random import choice
 
-from common.game_board import BOARD_STRING_HEADER
-from common.game_utils import get_wave_age_info, get_route, get_move_action
-from common.move_types import Move
+from game.game_board import BOARD_STRING_HEADER
+from game.game_utils import get_wave_age_info, get_route, get_move_action
+from game.move_types import Move
 from game.cell_types import *
 from game.game_board import LodeRunnerGameBoard
 

@@ -4,13 +4,15 @@ from uuid import uuid1
 
 from autobahn.asyncio.websocket import WebSocketServerFactory
 
-from common.game_utils import factory_action_decorator
 from game.cell_types import SPECTATOR, PLAYER, GUARD
 from game.game_session import LodeRunnerGameSession
+from game.game_utils import factory_action_decorator
 from game.game_utils import get_formatted_scores, get_formatted_names
-from game_config import *
 
 logger = getLogger()
+
+
+INACTIVITY_TIMEOUT = 100 * 60
 
 
 class BroadcastServerFactory(WebSocketServerFactory):

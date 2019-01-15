@@ -6,7 +6,8 @@ import aiohttp_jinja2
 import jinja2
 from aiohttp.web import Application, Response
 
-from game_config import TEMPLATES_DIR, REST_ROOT
+REST_ROOT = 'rest'
+TEMPLATES_DIR = 'templates'
 
 logger = getLogger()
 

@@ -6,12 +6,16 @@ from utils.configure_logging import setup_logging
 from server.server_protocol import BroadcastServerProtocol
 from server.web_server import WebServer
 from server.server_factory import BroadcastServerFactory
-from game_config import *
+
+GAME_SERVER_WEB_SOCKET_URL = u"ws://0.0.0.0:%s"
+GAME_SERVER_WEB_SOCKET_PORT = 9000
+FRONTEND_PORT = 8080
+DEBUG = False
 
 
 def main():
     cmd_args = get_cmd_args()
-    setup_logging(cmd_args.log_level, SERVER_LOG_FILE)
+    setup_logging(cmd_args.log_level)
 
     game_factory = BroadcastServerFactory(url=GAME_SERVER_WEB_SOCKET_URL % cmd_args.port)
 

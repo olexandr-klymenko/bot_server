@@ -1,10 +1,4 @@
-from logging import getLogger
-
-from common.move_types import CharCode
-
-logger = getLogger()
-
-__all__ = ['PLAYER', 'GUARD', 'CellType', 'Drill', 'CellGroups', 'DRILL_SCENARIO', 'CELL_TYPE_COERCION']
+from game.move_types import CharCode
 
 
 PLAYER = 'Player'

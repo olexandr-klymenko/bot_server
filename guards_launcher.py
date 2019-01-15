@@ -9,7 +9,7 @@ NAMES = ['1', '2', '3', '4']
 
 def main():
     loop = asyncio.get_event_loop()
-    setup_logging('INFO', '')
+    setup_logging('INFO')
 
     run_loop(loop)
 

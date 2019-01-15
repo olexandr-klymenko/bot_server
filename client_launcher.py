@@ -2,7 +2,6 @@ import asyncio
 
 from client.client_factory import GameClientFactory
 from game.cell_types import PLAYER
-from game_config import *
 from utils.configure_logging import setup_logging
 
 # NAMES = ['Arny', 'Bob', 'Charlie', 'Dick', 'Eva', 'Fred', 'Greg', 'Harry', 'Irena', 'Jack', 'Kat']
@@ -15,7 +14,7 @@ NAMES = ['Arny', 'Bob', 'Charlie']
 def main():
     loop = asyncio.get_event_loop()
 
-    setup_logging('INFO', CLIENT_LOG_FILE)
+    setup_logging('INFO')
 
     run_loop(loop)
 
