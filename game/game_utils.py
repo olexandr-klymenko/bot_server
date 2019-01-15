@@ -179,8 +179,8 @@ def get_wave_age_info(start_cell, joints_info):
     return wave_info
 
 
-def get_route(players_cells, wave_age_info, joints_info):
-    target_candidates = [cell for cell in players_cells if cell in wave_age_info]
+def get_route(target_cells, wave_age_info, joints_info):
+    target_candidates = [cell for cell in target_cells if cell in wave_age_info]
     if target_candidates:
         target_cell = min(target_candidates, key=lambda x: wave_age_info[x])
         wave_age = wave_age_info[target_cell]

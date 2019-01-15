@@ -15,7 +15,7 @@ from utils.map_generation import get_generated_board
 logger = getLogger()
 
 GOLD_CELLS_NUMBER = 30
-TICK_TIME = 1
+TICK_TIME = .3
 GUARD_NAME_PREFIX = "AI_"
 
 

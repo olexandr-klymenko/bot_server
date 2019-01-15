@@ -1,4 +1,5 @@
 import asyncio
+from multiprocessing import Pool
 
 from client.client_factory import GameClientFactory
 from game.cell_types import GUARD
@@ -7,11 +8,12 @@ from utils.configure_logging import setup_logging
 NAMES = ['1', '2', '3', '4']
 
 
-def main():
+def main(name):
     loop = asyncio.get_event_loop()
     setup_logging('INFO')
 
-    run_loop(loop)
+    factory = GameClientFactory(url=f'ws://127.0.0.1:9000', client_type=GUARD, name=name)
+    loop.run_until_complete(loop.create_connection(factory, '127.0.0.1', 9000))
 
     try:
         loop.run_forever()
@@ -21,13 +23,6 @@ def main():
         loop.close()
 
 
-def run_loop(loop):
-    coros = []
-    for name in NAMES:
-        factory = GameClientFactory(url=f'ws://127.0.0.1:9000', client_type=GUARD, name=name)
-        coros.append(loop.create_connection(factory, '127.0.0.1', 9000))
-    loop.run_until_complete(asyncio.gather(*coros))
-
-
 if __name__ == '__main__':
-    main()
+    pool = Pool(len(NAMES))
+    pool.map(main, NAMES)
