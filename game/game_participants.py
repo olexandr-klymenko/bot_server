@@ -65,15 +65,15 @@ class LodeRunnerParticipantObject(ParticipantObject):
 class Player(LodeRunnerParticipantObject):
     def __init__(self, player_id, cell, name):
         super().__init__(participant_id=player_id, cell=cell, name=name)
-        self.scores = {'permanent': 0, 'temporary': 0}
+        self.score = {'permanent': 0, 'temporary': 0}
 
     def re_spawn(self, spawn_cell):
         super().re_spawn(spawn_cell)
-        self.scores['temporary'] = 0
+        self.score['temporary'] = 0
 
     def pickup_gold(self):
-        self.scores['temporary'] += 1
-        self.scores['permanent'] += self.scores['temporary']
+        self.score['temporary'] += 1
+        self.score['permanent'] += self.score['temporary']
 
 
 class Guard(LodeRunnerParticipantObject):

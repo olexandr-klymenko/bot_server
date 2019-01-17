@@ -7,8 +7,6 @@ from game.game_utils import (get_board_size, is_pass, get_index_from_cell, get_l
 
 logger = getLogger()
 
-BOARD_STRING_HEADER = "board="
-
 
 class LodeRunnerGameBoard:
     def __init__(self, board_string):
@@ -33,22 +31,23 @@ class LodeRunnerGameBoard:
         return joints_info
 
     def get_board_string(self, cell, direction):
-        board_string = ''
+        board_list = self._get_board_list()
+        if cell:
+            self._update_board_list_by_hero(board_list=board_list, cell=cell, direction=direction)
+        return ''.join(board_list)
+
+    def _get_board_list(self):
+        board_list = []
         for vertical in range(self.size):
             for horizontal in range(self.size):
-                board_string += self._get_game_board_cell_type((horizontal, vertical))
-        if cell:
-            board_string = self._get_hero_board_string(board_string=board_string, cell=cell, direction=direction)
-        board_string = "%s%s" % (BOARD_STRING_HEADER, board_string)
-        return board_string
+                board_list.append(self._get_game_board_cell_type((horizontal, vertical)))
+        return board_list
 
-    def _get_hero_board_string(self, board_string, cell, direction):
-        board_list = list(board_string)
+    def _update_board_list_by_hero(self, board_list, cell, direction):
         board_index = get_index_from_cell(player_point=cell, size=self.size)
         player_cell_type = self.get_participant_on_cell_type(cell=cell, participant_type=PLAYER,
                                                              direction=direction)
         board_list[board_index] = CellGroups.get_hero_cell_type(player_cell_type)
-        return ''.join(board_list)
 
     def is_cell_drillable(self, cell):
         return self._is_cell_valid(cell) and self.get_cell_type(cell) == CellType.DrillableBrick

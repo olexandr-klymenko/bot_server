@@ -207,8 +207,8 @@ class LodeRunnerGameSession:
             delete_empty_value_keys(player_scenarios)
 
     @property
-    def scores(self):
-        return {player_object.name: player_object.scores['permanent'] for player_object in self.players}
+    def score(self):
+        return {player_object.name: player_object.score['permanent'] for player_object in self.players}
 
     @property
     def players(self):
@@ -238,10 +238,13 @@ class LodeRunnerGameSession:
             participant_object = self._get_participant_object_by_id(participant_id)
             return participant_object.get_direction()
 
-    def get_board_string(self, player_id):
+    def get_session_info(self, player_id):
+        session_info = {}
         cell = self._get_participant_cell_by_id(player_id)
         direction = self._get_participant_direction_by_id(player_id)
-        return self.game_board.get_board_string(cell=cell, direction=direction)
+        session_info['board'] = self.game_board.get_board_string(cell=cell, direction=direction)
+        session_info['players'] = {'score': self.score, 'names': self.players_cells}
+        return session_info
 
     @rest_action_decorator
     def info(self):

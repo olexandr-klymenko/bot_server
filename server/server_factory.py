@@ -1,16 +1,14 @@
+import json
+from autobahn.asyncio.websocket import WebSocketServerFactory
 from datetime import datetime, timedelta
 from logging import getLogger
 from uuid import uuid1
 
-from autobahn.asyncio.websocket import WebSocketServerFactory
-
 from game.cell_types import SPECTATOR, PLAYER, GUARD
 from game.game_session import LodeRunnerGameSession
 from game.game_utils import factory_action_decorator
-from game.game_utils import get_formatted_scores, get_formatted_names
 
 logger = getLogger()
-
 
 INACTIVITY_TIMEOUT = 100 * 60
 
@@ -40,15 +38,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
     def broadcast(self):
         logger.debug("Broadcasting data for websocket clients ...")
         for client_id, client in self.clients.items():
-            logger.debug("Sending broadcast message to {client_type} {name}".format(**client.client_info))
-            client.sendMessage(self.game_session.get_board_string(client_id).encode('utf8'))
-
-            if client.websocket_origin:
-                score_message = get_formatted_scores(self.game_session.scores)
-                client.sendMessage(score_message.encode('utf8'))
-
-                players_message = get_formatted_names(self.game_session.players_cells)
-                client.sendMessage(players_message.encode('utf8'))
+            client.sendMessage(json.dumps(self.game_session.get_session_info(client_id)).encode())
 
     def check_inactivity(self):
         for client_id, client in self.clients.items():

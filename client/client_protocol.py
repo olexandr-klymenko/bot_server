@@ -1,13 +1,12 @@
-import re
+import json
 from autobahn.asyncio.websocket import WebSocketClientProtocol
 from logging import getLogger
 from random import choice
 
-from game.game_board import BOARD_STRING_HEADER
-from game.game_utils import get_wave_age_info, get_route, get_move_action
-from game.move_types import Move
 from game.cell_types import *
 from game.game_board import LodeRunnerGameBoard
+from game.game_utils import get_wave_age_info, get_route, get_move_action
+from game.move_types import Move
 
 logger = getLogger()
 
@@ -33,7 +32,8 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
                 target_cell_types = CellGroups.PlayerCellTypes
             else:
                 raise Exception
-            board_string = re.sub(BOARD_STRING_HEADER, '', payload.decode())
+
+            board_string = json.loads(payload.decode())['board']
             path_finder = ClientPathFinder(board_string, target_cell_types)
             logger.debug("My cell: %s" % str(path_finder.my_cell))
             logger.debug("Gold cells: %s" % path_finder.target_cells)

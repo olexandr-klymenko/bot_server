@@ -2,9 +2,7 @@ const game_port = '9000';
 const BOARD = 'board';
 const SCORE = 'score';
 const PLAYERS = 'players';
-const SCORE_DELIMITER = /\|/g;
-const messageRe = /^(\w+)=(.*)/;
-const playerCellRe = /^(\w+),(\d+),(\d+)/;
+const NAMES = 'names';
 const hostname = window.location.hostname;
 const url = "ws://" + hostname + ":" + game_port;
 const game_board_socket_url = url + "?client_type=Player&name=" + get_url_value('user');
@@ -54,12 +52,12 @@ const cell_images_info = {
 const cells_info = get_cells_info();
 
 const movesInfo = {
-    'ArrowLeft':    'Left',
-    'ArrowUp':      'Up',
-    'ArrowRight':   'Right',
-    'ArrowDown':    'Down',
-    'KeyZ':         'DrillLeft',
-    'KeyX':         'DrillRight',
+    'ArrowLeft': 'Left',
+    'ArrowUp': 'Up',
+    'ArrowRight': 'Right',
+    'ArrowDown': 'Down',
+    'KeyZ': 'DrillLeft',
+    'KeyX': 'DrillRight',
 };
 
 function main() {
@@ -69,12 +67,12 @@ function main() {
 }
 
 
-function get_url_value(varSearch){
+function get_url_value(varSearch) {
     let searchString = window.location.search.substring(1);
     let variableArray = searchString.split('&');
-    for (let index = 0; index < variableArray.length; index++){
+    for (let index = 0; index < variableArray.length; index++) {
         let keyValuePair = variableArray[index].split('=');
-        if(keyValuePair[0] === varSearch){
+        if (keyValuePair[0] === varSearch) {
             return keyValuePair[1];
         } else {
             return ''
@@ -92,19 +90,10 @@ function game_board_socket_manager(board_size) {
     let canvas_ctx = get_canvas_context(board_size);
 
     game_board_socket.onmessage = (event) => {
-        let messageResult = messageRe.exec(event.data);
-        let messageKey = messageResult[1];
-        let messageValue = messageResult[2];
-
-        if(messageKey === BOARD) {
-            show_game_board(messageValue, canvas_ctx, board_size);
-
-        } else if(messageKey === SCORE) {
-            show_scores(messageValue, canvas_ctx, board_size);
-
-        } else if (messageKey === PLAYERS) {
-            show_players_names(messageValue, canvas_ctx);
-        }
+        let sessionInfo = JSON.parse(event.data);
+        show_game_board(sessionInfo[BOARD], canvas_ctx, board_size);
+        show_scores(sessionInfo[PLAYERS][SCORE], canvas_ctx, board_size);
+        show_players_names(sessionInfo[PLAYERS][NAMES], canvas_ctx);
     };
     return game_board_socket
 }
@@ -128,8 +117,8 @@ function get_cells_info() {
 }
 
 function show_game_board(board_message, ctx, board_size) {
-    for (let vertical_index=0; vertical_index < board_size; vertical_index++) {
-        for (let horizontal_index=0; horizontal_index < board_size; horizontal_index++) {
+    for (let vertical_index = 0; vertical_index < board_size; vertical_index++) {
+        for (let horizontal_index = 0; horizontal_index < board_size; horizontal_index++) {
             let current_cell_type = board_message[vertical_index * board_size + horizontal_index];
             ctx.drawImage(
                 cells_info[current_cell_type],
@@ -142,62 +131,26 @@ function show_game_board(board_message, ctx, board_size) {
 
 function show_scores(score_message, canvas_ctx, board_size) {
     canvas_ctx.font = score_font;
+    canvas_ctx.fillStyle = score_font_color;
     canvas_ctx.clearRect(
         board_size * cell_size,
         0,
         board_size * cell_size + score_pane_size,
         board_size * cell_size + cell_size
     );
-    wrap_text(
-        canvas_ctx,
-        score_message.replace(SCORE_DELIMITER, "\n"),
-        board_size * cell_size + cell_size,
-        cell_size,
-        score_pane_size,
-        cell_size,
-        score_font_color
-    )
+    for (let [playerName, score] of Object.entries(score_message)) {
+        let delta = Object.keys(score_message).indexOf(playerName) * cell_size;
+        canvas_ctx.fillText(
+            playerName + ': ' + score,
+            board_size * cell_size + cell_size,
+            cell_size + delta)
+    }
 }
 
-function wrap_text(context, text, x, y, maxWidth, lineHeight, fillStyle) {
-
-    context.fillStyle = fillStyle;
-    let breaks = text.split('\n');
-    let newLines = "";
-    for(let index = 0; index < breaks.length; index ++){
-        newLines = newLines + breaks[index] + ' breakLine ';
-    }
-
-    let words = newLines.split(' ');
-    let line = '';
-    for(let n = 0; n < words.length; n++) {
-        if(words[n] !== 'breakLine'){
-            let testLine = line + words[n] + ' ';
-            let metrics = context.measureText(testLine);
-            let testWidth = metrics.width;
-            if (testWidth > maxWidth && n > 0) {
-                context.fillText(line, x, y);
-                line = words[n] + ' ';
-                y += lineHeight;
-            }
-            else {
-                line = testLine;
-            }
-        }else{
-            context.fillText(line, x, y);
-            line = '';
-            y += lineHeight;
-        }
-    }
-    context.fillText(line, x, y);
-}
-
-function show_players_names(message, canvasCtx) {
-    let players = message.split(' ');
-    for (let index=0; index<players.length; index++) {
-        let playerName = players[index].replace(playerCellRe, "$1");
-        let x = players[index].replace(playerCellRe, "$2");
-        let y = players[index].replace(playerCellRe, "$3");
+function show_players_names(players, canvasCtx) {
+    for (let [playerName, value] of Object.entries(players)) {
+        let x = value[0];
+        let y = value[1];
         write_player_name(
             canvasCtx,
             playerName,
@@ -220,8 +173,8 @@ function write_player_name(context, name, x, y, color) {
 
 function keyboard_manager(game_board_socket) {
     window.addEventListener('keyup',
-        function(event){
-            if (get_url_value('user') !== '' && event.code in movesInfo){
+        function (event) {
+            if (get_url_value('user') !== '' && event.code in movesInfo) {
                 game_board_socket.send(movesInfo[event.code])
             }
 
