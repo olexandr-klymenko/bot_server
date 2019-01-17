@@ -33,6 +33,7 @@ class LodeRunnerGameBoard:
         return joints_info
 
     def get_board_string(self, cell, direction):
+        # TODO: Optimize board_string creation, send JSON instead of string
         board_string = ''
         for vertical in range(self.size):
             for horizontal in range(self.size):
