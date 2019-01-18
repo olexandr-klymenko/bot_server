@@ -7,6 +7,7 @@ const hostname = window.location.hostname;
 const url = "ws://" + hostname + ":" + game_port;
 const game_board_socket_url = url + "?client_type=Player&name=" + get_url_value('user');
 const cell_size = 20;
+const basel_width = 10;
 const score_pane_size = 400;
 const score_font = "bold 18px arial";
 const score_font_color = "#000000";
@@ -101,8 +102,8 @@ function game_board_socket_manager(board_size) {
 function get_canvas_context(board_size) {
     let canvas = document.createElement("canvas");
     let ctx = canvas.getContext("2d");
-    canvas.width = board_size * cell_size + score_pane_size;
-    canvas.height = board_size * cell_size;
+    canvas.width = board_size * cell_size + score_pane_size + 2 * basel_width;
+    canvas.height = board_size * cell_size + 2 * basel_width;
     document.body.appendChild(canvas);
     return ctx
 }
@@ -121,18 +122,24 @@ function show_game_board(ctx, board_message) {
         for (let x = 0; x < board_message[y].length; x++) {
             ctx.drawImage(
                 cells_info[board_message[y][x]],
-                x * cell_size,
-                y * cell_size
+                x * cell_size + basel_width,
+                y * cell_size + basel_width
             );
         }
     }
+    ctx.beginPath();
+    ctx.lineWidth = basel_width;
+    ctx.strokeStyle = "black";
+    let basel_size = board_message.length * cell_size + basel_width;
+    ctx.rect(5, 5, basel_size, basel_size);
+    ctx.stroke();
 }
 
 function show_scores(score_message, canvas_ctx, board_size) {
     canvas_ctx.font = score_font;
     canvas_ctx.fillStyle = score_font_color;
     canvas_ctx.clearRect(
-        board_size * cell_size,
+        board_size * cell_size + basel_width * 2,
         0,
         board_size * cell_size + score_pane_size,
         board_size * cell_size + cell_size
@@ -141,7 +148,7 @@ function show_scores(score_message, canvas_ctx, board_size) {
         let delta = Object.keys(score_message).indexOf(playerName) * cell_size;
         canvas_ctx.fillText(
             playerName + ': ' + score,
-            board_size * cell_size + cell_size,
+            board_size * cell_size + cell_size + 2 * basel_width,
             cell_size + delta)
     }
 }
@@ -160,8 +167,8 @@ function show_players_names(players, canvasCtx) {
 }
 
 function write_player_name(context, name, x, y, color) {
-    let x_real = x * cell_size;
-    let y_real = y * cell_size - 2;
+    let x_real = x * cell_size + basel_width;
+    let y_real = y * cell_size - 2 + basel_width;
     context.font = player_name_font;
     context.strokeStyle = 'black';
     context.lineWidth = 2;
