@@ -91,7 +91,7 @@ function game_board_socket_manager(board_size) {
 
     game_board_socket.onmessage = (event) => {
         let sessionInfo = JSON.parse(event.data);
-        show_game_board(sessionInfo[BOARD], canvas_ctx, board_size);
+        show_game_board(canvas_ctx, sessionInfo[BOARD]);
         show_scores(sessionInfo[PLAYERS][SCORE], canvas_ctx, board_size);
         show_players_names(sessionInfo[PLAYERS][NAMES], canvas_ctx);
     };
@@ -116,14 +116,13 @@ function get_cells_info() {
     return cells_info
 }
 
-function show_game_board(board_message, ctx, board_size) {
-    for (let vertical_index = 0; vertical_index < board_size; vertical_index++) {
-        for (let horizontal_index = 0; horizontal_index < board_size; horizontal_index++) {
-            let current_cell_type = board_message[vertical_index * board_size + horizontal_index];
+function show_game_board(ctx, board_message) {
+    for (let y in board_message) {
+        for (let x = 0; x < board_message[y].length; x++) {
             ctx.drawImage(
-                cells_info[current_cell_type],
-                horizontal_index * cell_size,
-                vertical_index * cell_size
+                cells_info[board_message[y][x]],
+                x * cell_size,
+                y * cell_size
             );
         }
     }

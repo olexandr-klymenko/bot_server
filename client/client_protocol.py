@@ -38,8 +38,7 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
 
     def onMessage(self, payload, isBinary):
         if not isBinary:
-            board_string = json.loads(payload.decode())['board']
-            board_layers = [board_string[i:i + 27] for i in range(0, len(board_string), 27)] # TODO: get rid of hardcode
+            board_layers = json.loads(payload.decode())['board']
             self.initial_game_board = self.initial_game_board or LodeRunnerGameBoard(
                 get_coerced_board_string(board_layers)
             )

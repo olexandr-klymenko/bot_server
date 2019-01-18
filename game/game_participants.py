@@ -82,9 +82,9 @@ class Player(LodeRunnerParticipantObject):
     def trap_participant(self, participant_object):
         participant_type = participant_object.get_type()
         if participant_type == 'Guard':
-            self.scores['permanent'] += CATCH_Player_REWARD
+            self.score['permanent'] += CATCH_Player_REWARD
         else:
-            self.scores['permanent'] += CATCH_Guard_REWARD
+            self.score['permanent'] += CATCH_Guard_REWARD
 
 
 class Guard(LodeRunnerParticipantObject):

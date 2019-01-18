@@ -219,13 +219,14 @@ class LodeRunnerGameSession:
             delete_empty_value_keys(player_scenarios)
 
     @property
-    def score(self):
+    def score_info(self):
         return {player_object.name: player_object.score['permanent'] for player_object in self.players}
 
     @property
     def players(self):
-        return [participant_object for participant_object in self._participants
-                if participant_object.get_type() == PLAYER]
+        return sorted([p_obj for p_obj in self._participants if p_obj.get_type() == PLAYER],
+                      key=lambda x: x.score['permanent'],
+                      reverse=True)
 
     @property
     def players_cells(self):
@@ -254,10 +255,9 @@ class LodeRunnerGameSession:
         session_info = {}
         cell = self._get_participant_cell_by_id(player_id)
         direction = self._get_participant_direction_by_id(player_id)
-        session_info['board'] = self.game_board.get_board_string(cell=cell, direction=direction)
-        session_info['players'] = {'score': self.score, 'names': self.players_cells}
+        session_info['board'] = self.game_board.get_board_list(cell=cell, direction=direction)
+        session_info['players'] = {'score': self.score_info, 'names': self.players_cells}
         return session_info
-        # TODO: send list of layers instead of string
 
     @rest_action_decorator
     def info(self):
