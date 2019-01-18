@@ -47,13 +47,19 @@ def is_pass(start_cell, end_cell, board_info):
     if board_info[start_cell] not in [CellType.Empty, CellType.Ladder, CellType.Pipe]:
         return False
 
-    if board_info[start_cell] != CellType.Ladder and end_cell == get_upper_cell(start_cell):
+    if (
+            board_info[start_cell] != CellType.Ladder
+            and end_cell == get_upper_cell(start_cell)
+    ):
         return False
 
-    if get_lower_cell(start_cell) in board_info:
-        if board_info[start_cell] == CellType.Empty and board_info[get_lower_cell(start_cell)] == CellType.Empty\
-                and end_cell != get_lower_cell(start_cell):
-            return False
+    if (
+            get_lower_cell(start_cell) in board_info
+            and board_info[start_cell] in [CellType.Empty, CellType.Gold]
+            and board_info[get_lower_cell(start_cell)] in [CellType.Empty, CellType.Pipe]
+            and end_cell != get_lower_cell(start_cell)
+    ):
+        return False
 
     return True
 
