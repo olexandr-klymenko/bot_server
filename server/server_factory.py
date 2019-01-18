@@ -1,19 +1,30 @@
 import json
-from autobahn.asyncio.websocket import WebSocketServerFactory
 from datetime import datetime, timedelta
-from logging import getLogger
+from functools import wraps
 from uuid import uuid1
+
+from autobahn.asyncio.websocket import WebSocketServerFactory
 
 from game.cell_types import SPECTATOR, PLAYER, GUARD
 from game.game_session import LodeRunnerGameSession
-from game.game_utils import factory_action_decorator
-
-logger = getLogger()
+from game.game_utils import logger
 
 INACTIVITY_TIMEOUT = 100 * 60
 
 
+def factory_action_decorator(func):
+    @wraps(func)
+    def wrapper(factory, *args, **kwargs):
+        start_time = datetime.now()
+        func(factory, *args, **kwargs)
+        execution_time = datetime.now() - start_time
+        logger.debug("%s execution time: %s" % (func.__name__, execution_time))
+
+    return wrapper
+
+
 class BroadcastServerFactory(WebSocketServerFactory):
+
     def __init__(self, url):
         super().__init__(url)
         self.is_locked = False
@@ -21,6 +32,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
         self.board_size = self.game_session.game_board.size
         self.clients = {}
         self.tick()
+        logger.info('Lode Runner game server has been initialized')
 
     def tick(self):
         if not self.game_session.is_paused():

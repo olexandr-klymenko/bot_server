@@ -1,6 +1,7 @@
 from logging import getLogger
+from random import choice
 
-from game.game_utils import get_random_direction
+from game.move_types import Move
 
 logger = getLogger()
 
@@ -92,3 +93,7 @@ class Guard(LodeRunnerParticipantObject):
 
 def get_participant(participant_id, participant_type, cell, name):
     return eval(participant_type)(participant_id, cell, name)
+
+
+def get_random_direction():
+    return choice([Move.Left, Move.Right])

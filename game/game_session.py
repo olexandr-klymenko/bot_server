@@ -1,4 +1,5 @@
 from copy import deepcopy
+from functools import wraps
 from itertools import chain
 from logging import getLogger
 from random import choice
@@ -7,8 +8,7 @@ from uuid import uuid1
 from game.cell_types import CellType, Drill, PLAYER, GUARD, DRILL_SCENARIO
 from game.game_board import LodeRunnerGameBoard
 from game.game_participants import get_participant
-from game.game_utils import (get_drill_vector, delete_empty_value_keys, rest_action_decorator, get_lower_cell,
-                             get_move_point_cell, get_modified_cell, RestActions)
+from game.game_utils import get_lower_cell, get_cell_neighbours
 from game.move_types import Move
 from utils.map_generation import get_generated_board
 
@@ -19,7 +19,22 @@ TICK_TIME = .3
 GUARD_NAME_PREFIX = "AI_"
 
 
+class RestActions:
+    rest_actions = []
+
+
+def rest_action_decorator(func):
+    RestActions().rest_actions.append(func.__name__)
+
+    @wraps(func)
+    def wrapper(game_session, *args, **kwargs):
+        return func(game_session, *args, **kwargs)
+
+    return wrapper
+
+
 class LodeRunnerGameSession:
+
     def __init__(self):
         self.artifacts = []
         self.registry = {}
@@ -63,9 +78,6 @@ class LodeRunnerGameSession:
                 self._process_drill(action, player_object)
             else:
                 logger.info("Unknown command '%s' from client '%s'" % (action, repr(player_object)))
-
-    def can_process_action(self, player_id, action):
-        return not self._is_participant_falling(self._get_participant_object_by_id(player_id))
 
     def _is_participant_falling(self, participant_object):
         lower_cell = get_lower_cell(participant_object.get_cell())
@@ -245,6 +257,7 @@ class LodeRunnerGameSession:
         session_info['board'] = self.game_board.get_board_string(cell=cell, direction=direction)
         session_info['players'] = {'score': self.score, 'names': self.players_cells}
         return session_info
+        # TODO: send list of layers instead of string
 
     @rest_action_decorator
     def info(self):
@@ -336,7 +349,7 @@ class LodeRunnerGameSession:
     def _get_free_to_spawn_cells(self):
         empty_cells = self.game_board.get_empty_cells()
         participants_cells = [participant_object.cell for participant_object in self._participants]
-        participants_neighbour_cells = list(chain.from_iterable([self.game_board.get_cell_neighbours(cell)
+        participants_neighbour_cells = list(chain.from_iterable([get_cell_neighbours(cell, self.game_board.board_info)
                                                                  for cell in participants_cells]))
         return list(set(empty_cells) - set(participants_cells + participants_neighbour_cells + self.artifacts))
 
@@ -410,3 +423,40 @@ class LodeRunnerGameSession:
         for participant_object in self._participants:
             if participant_object.get_name() == name:
                 return participant_object
+
+
+def get_drill_vector(drill_action):
+    if drill_action == Drill.DrillLeft:
+        return -1, 1
+    if drill_action == Drill.DrillRight:
+        return 1, 1
+
+
+def delete_empty_value_keys(info):
+    empty_value_keys = []
+    for key, value in info.items():
+        if not value:
+            empty_value_keys.append(key)
+
+    for elem in empty_value_keys:
+        info.pop(elem)
+
+
+def get_move_point_cell(cell, move):
+    x_move, y_move = get_move_changes(move)
+    return cell[0] + x_move, cell[1] + y_move
+
+
+def get_modified_cell(cell, vector):
+    return cell[0] + vector[0], cell[1] + vector[1]
+
+
+def get_move_changes(move):
+    move_changes = {
+            None:       (0, 0),
+            Move.Right: (1, 0),
+            Move.Left: (-1, 0),
+            Move.Down: (0, 1),
+            Move.Up: (0, -1)
+        }
+    return move_changes[move]

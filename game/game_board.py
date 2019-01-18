@@ -1,34 +1,18 @@
 from copy import deepcopy
 from logging import getLogger
+from typing import List
 
 from game.cell_types import CellType, CellGroups, PLAYER
-from game.game_utils import (get_board_size, is_pass, get_index_from_cell, get_left_cell, get_right_cell,
-                             get_lower_cell, get_upper_cell)
 
 logger = getLogger()
 
 
 class LodeRunnerGameBoard:
-    def __init__(self, board_string):
-        self.board_string = board_string
-        self.size = get_board_size(board_string)
-        self.cell_type = CellType
+    def __init__(self, board_layers: List[str]):
+        self.board_layers = tuple(board_layers)
+        self.size = len(board_layers)
         self.initial_board_info = self.get_initial_board_info()
         self.board_info = deepcopy(self.initial_board_info)
-        self.joints_info = self._get_joints_info()
-
-    def _get_joints_info(self):
-        joints_info = {}
-        for vertical in range(self.size):
-            for horizontal in range(self.size):
-                cell = horizontal, vertical
-                cell_joints = []
-                neighbours = self.get_cell_neighbours(cell)
-                for neighbour_cell in neighbours:
-                    if is_pass(cell, neighbour_cell, self.initial_board_info):
-                        cell_joints.append(neighbour_cell)
-                joints_info.update({cell: cell_joints})
-        return joints_info
 
     def get_board_string(self, cell, direction):
         board_list = self._get_board_list()
@@ -68,32 +52,14 @@ class LodeRunnerGameBoard:
 
     def get_initial_board_info(self):
         board_info = {}
-        board_list = list(self.board_string)
-        for vertical in range(self.size):
-            for horizontal in range(self.size):
-                cell_code = board_list.pop(0)
-                if self.cell_type.is_code_valid(cell_code):
-                    board_info[(horizontal, vertical)] = cell_code
+        for y_coord, line in enumerate(self.board_layers):
+            for x_coord, cell_code in enumerate(line):
+                if CellType.is_code_valid(cell_code):
+                    board_info[(x_coord, y_coord)] = cell_code
                 else:
                     raise Exception("Cell code %s is invalid. Valid codes: %s" %
-                                    (cell_code, self.cell_type.get_valid_codes()))
+                                    (cell_code, CellType.get_valid_codes()))
         return board_info
-
-    def get_cell_neighbours(self, cell):
-        neighbours = []
-        if get_left_cell(cell) in self.board_info:
-            neighbours.append(get_left_cell(cell))
-
-        if get_right_cell(cell) in self.board_info:
-            neighbours.append(get_right_cell(cell))
-
-        if get_lower_cell(cell) in self.board_info:
-            neighbours.append(get_lower_cell(cell))
-
-        if get_upper_cell(cell) in self.board_info:
-            neighbours.append(get_upper_cell(cell))
-
-        return neighbours
 
     def process_move(self, current_cell, next_cell, next_cell_type, is_cell_in_scenarios):
         if not is_cell_in_scenarios:
@@ -107,7 +73,7 @@ class LodeRunnerGameBoard:
         self.board_info[cell] = cell_type
 
     def get_empty_cells(self):
-        return [cell for cell, cell_type in self.initial_board_info.items() if cell_type == self.cell_type.Empty]
+        return [cell for cell, cell_type in self.initial_board_info.items() if cell_type == CellType.Empty]
 
     def _get_game_board_cell_type(self, cell):
         return self.board_info[cell]
@@ -118,3 +84,7 @@ class LodeRunnerGameBoard:
             return True
         except KeyError:
             return False
+
+
+def get_index_from_cell(player_point, size):
+    return player_point[1] * size + player_point[0]
