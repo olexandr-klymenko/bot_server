@@ -7,13 +7,17 @@ from autobahn.asyncio.websocket import WebSocketClientProtocol
 
 from game.cell_types import PLAYER, GUARD, CellType, CellGroups, CELL_TYPE_COERCION
 from game.game_board import LodeRunnerGameBoard
-from game.move_types import Move
 from game.game_utils import get_joints_info
+from game.move_types import Move
 
 logger = getLogger()
 
 
 class LodeRunnerClientProtocol(WebSocketClientProtocol):
+    target_cell_types = None
+    initial_game_board = None
+    joints_info = None
+    path_finder_klas = None
 
     @property
     def name(self):
@@ -25,18 +29,27 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
 
     def onConnect(self, response):
         logger.info("'{user}' has been connected to server {server}".format(user=self.name, server=response.peer))
+        if self.client_type == PLAYER:
+            self.target_cell_types = [CellType.Gold]
+        elif self.client_type == GUARD:
+            self.target_cell_types = CellGroups.PlayerCellTypes
+        else:
+            raise Exception
 
     def onMessage(self, payload, isBinary):
         if not isBinary:
-            if self.client_type == PLAYER:
-                target_cell_types = [CellType.Gold]
-            elif self.client_type == GUARD:
-                target_cell_types = CellGroups.PlayerCellTypes
-            else:
-                raise Exception
-
             board_string = json.loads(payload.decode())['board']
-            path_finder = ClientPathFinder(board_string, target_cell_types)
+            board_layers = [board_string[i:i + 27] for i in range(0, len(board_string), 27)] # TODO: get rid of hardcode
+            self.initial_game_board = self.initial_game_board or LodeRunnerGameBoard(
+                get_coerced_board_string(board_layers)
+            )
+            self.joints_info = self.joints_info or get_joints_info(
+                self.initial_game_board.board_info, self.initial_game_board.size
+            )
+            self.path_finder_klas = self.path_finder_klas or path_finder_factory(self.joints_info,
+                                                                                 self.target_cell_types
+                                                                                 )
+            path_finder = self.path_finder_klas(board_layers)
             logger.debug("My cell: %s" % str(path_finder.my_cell))
             logger.debug("Gold cells: %s" % path_finder.target_cells)
             action = path_finder.get_routed_move_action()
@@ -54,38 +67,43 @@ def get_coerced_board_string(board_layers):
     return coerced
 
 
-class ClientPathFinder:
+def path_finder_factory(joints_info, target_cell_types):
 
-    def __init__(self, board_string, target_cell_types):
-        board_layers = [board_string[i:i+27] for i in range(0, len(board_string), 27)]
-        self.game_board = LodeRunnerGameBoard(board_layers)
-        self.initial_game_board = LodeRunnerGameBoard(get_coerced_board_string(board_layers))
-        self.my_cell, self.target_cells = self.my_cell_and_gold(target_cell_types)
-        self.joints_info = get_joints_info(self.initial_game_board.board_info, self.initial_game_board.size)
+    class ClientPathFinder:
+        joints_info = None
+        target_cell_types = None
 
-    def my_cell_and_gold(self, target_cell_types):
-        gold_cells = []
-        my_cell = None
-        for cell, cell_code in self.game_board.board_info.items():
-            if cell_code in CellGroups.HeroCellTypes:
-                my_cell = cell
-            elif cell_code in target_cell_types:
-                gold_cells.append(cell)
-        if my_cell is None:
-            raise Exception("Couldn't find my cell")
-        return my_cell, gold_cells
+        def __init__(self, board_layers):
+            self.game_board = LodeRunnerGameBoard(board_layers)
+            self.my_cell, self.target_cells = self.my_cell_and_gold()
 
-    def get_routed_move_action(self):
-        if self.target_cells:
-            wave_age_info = get_wave_age_info(self.my_cell, self.joints_info)
-            next_cell = get_route(self.target_cells, wave_age_info, self.joints_info)
+        def my_cell_and_gold(self):
+            gold_cells = []
+            my_cell = None
+            for cell, cell_code in self.game_board.board_info.items():
+                if cell_code in CellGroups.HeroCellTypes:
+                    my_cell = cell
+                elif cell_code in self.target_cell_types:
+                    gold_cells.append(cell)
+            if my_cell is None:
+                raise Exception("Couldn't find my cell")
+            return my_cell, gold_cells
 
-            if next_cell:
-                return get_move_action(self.my_cell, next_cell)
-            elif self.joints_info[self.my_cell]:
-                return get_move_action(self.my_cell, choice(self.joints_info[self.my_cell]))
+        def get_routed_move_action(self):
+            if self.target_cells:
+                wave_age_info = get_wave_age_info(self.my_cell, self.joints_info)
+                next_cell = get_route(self.target_cells, wave_age_info, self.joints_info)
 
-        return choice(Move.get_valid_codes())
+                if next_cell:
+                    return get_move_action(self.my_cell, next_cell)
+                elif self.joints_info[self.my_cell]:
+                    return get_move_action(self.my_cell, choice(self.joints_info[self.my_cell]))
+
+            return choice(Move.get_valid_codes())
+
+    ClientPathFinder.joints_info = joints_info
+    ClientPathFinder.target_cell_types = target_cell_types
+    return ClientPathFinder
 
 
 def get_wave_age_info(start_cell, joints_info):
