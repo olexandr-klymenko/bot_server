@@ -52,6 +52,15 @@ const cell_images_info = {
 
 const cells_info = get_cells_info();
 
+function get_cells_info() {
+    let cells_info = {};
+    for (let index in cell_images_info) {
+        cells_info[index] = new Image();
+        cells_info[index].src = imagesRoot + cell_images_info[index]
+    }
+    return cells_info
+}
+
 const movesInfo = {
     'ArrowLeft': 'Left',
     'ArrowUp': 'Up',
@@ -61,12 +70,12 @@ const movesInfo = {
     'KeyX': 'DrillRight',
 };
 
+
 function main() {
-    $.get("/rest/get_board_size", function (data) {
+    $.get("/rest/get_board_size", (data) => {
         websocket_game(parseInt(data));
     });
 }
-
 
 function get_url_value(varSearch) {
     let searchString = window.location.search.substring(1);
@@ -106,15 +115,6 @@ function get_canvas_context(board_size) {
     canvas.height = board_size * cell_size + 2 * basel_width;
     document.body.appendChild(canvas);
     return ctx
-}
-
-function get_cells_info() {
-    let cells_info = {};
-    for (let index in cell_images_info) {
-        cells_info[index] = new Image();
-        cells_info[index].src = imagesRoot + cell_images_info[index]
-    }
-    return cells_info
 }
 
 function show_game_board(ctx, board_message) {
