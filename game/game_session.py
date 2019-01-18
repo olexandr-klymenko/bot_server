@@ -51,8 +51,7 @@ class LodeRunnerGameSession:
 
     @rest_action_decorator
     def spawn_gold_cells(self, number=1):
-        spawned_cells = self.spawn_artifacts(CellType.Gold, number)
-        logger.debug("Spawned gold cells %s" % spawned_cells)
+        self.spawn_artifacts(CellType.Gold, number)
 
     def register_participant(self, client_id, name, participant_type):
         cell = choice(self._get_free_to_spawn_cells())
@@ -235,11 +234,6 @@ class LodeRunnerGameSession:
     def is_player_name_in_registry(self, name):
         return name in [player_object.name for player_object in self.players]
 
-    @property
-    def _guards(self):
-        return [participant_object for participant_object in self._participants
-                if participant_object.get_type() == GUARD]
-
     def process_gravity(self):
         logger.debug("Processing Gravity ...")
         for participants_object in self._participants:
@@ -315,13 +309,13 @@ class LodeRunnerGameSession:
                                                 if ai_object.get_type() == ai_type]))
 
     def spawn_artifacts(self, cell_type, number):
-        spawned_cells = []
+        artifacts_info = {}
+        free_to_spawn_cells = self._get_free_to_spawn_cells()
         for index in range(int(number)):
-            artifact_cell = choice(self._get_free_to_spawn_cells())
+            artifact_cell = choice(free_to_spawn_cells)
+            artifacts_info[artifact_cell] = cell_type
             self.artifacts.append(artifact_cell)
-            spawned_cells.append(artifact_cell)
-            self.game_board.update_board(cell=artifact_cell, cell_type=cell_type)
-        return spawned_cells
+        self.game_board.board_info.update(artifacts_info)
 
     @rest_action_decorator
     def set_tick_time(self, tick_time):
@@ -447,10 +441,6 @@ def get_move_point_cell(cell, move):
     return cell[0] + x_move, cell[1] + y_move
 
 
-def get_modified_cell(cell, vector):
-    return cell[0] + vector[0], cell[1] + vector[1]
-
-
 def get_move_changes(move):
     move_changes = {
             None:       (0, 0),
@@ -460,3 +450,7 @@ def get_move_changes(move):
             Move.Up: (0, -1)
         }
     return move_changes[move]
+
+
+def get_modified_cell(cell, vector):
+    return cell[0] + vector[0], cell[1] + vector[1]
