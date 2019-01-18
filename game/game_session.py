@@ -249,7 +249,7 @@ class LodeRunnerGameSession:
         session_info = {}
         cell = self._get_participant_cell_by_id(player_id)
         direction = self._get_participant_direction_by_id(player_id)
-        session_info['board'] = self.game_board.get_board_list(cell=cell, direction=direction)
+        session_info['board'] = self.game_board.get_board_layers(cell=cell, direction=direction)
         session_info['players'] = {'score': self.score_info, 'names': self.players_cells}
         return session_info
 

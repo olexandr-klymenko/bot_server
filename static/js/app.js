@@ -119,7 +119,7 @@ function get_canvas_context(board_size) {
 
 function show_game_board(ctx, board_message) {
     for (let y in board_message) {
-        for (let x = 0; x < board_message[y].length; x++) {
+        for (let x in board_message[y]) {
             ctx.drawImage(
                 cells_info[board_message[y][x]],
                 x * cell_size + basel_width,
@@ -129,7 +129,7 @@ function show_game_board(ctx, board_message) {
     }
     ctx.beginPath();
     ctx.lineWidth = basel_width;
-    ctx.strokeStyle = "black";
+    ctx.strokeStyle = "blue";
     let basel_size = board_message.length * cell_size + basel_width;
     ctx.rect(5, 5, basel_size, basel_size);
     ctx.stroke();

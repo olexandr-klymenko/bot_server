@@ -40,7 +40,7 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
         if not isBinary:
             board_layers = json.loads(payload.decode())['board']
             self.initial_game_board = self.initial_game_board or LodeRunnerGameBoard(
-                get_coerced_board_string(board_layers)
+                get_coerced_board_layers(board_layers)
             )
             self.joints_info = self.joints_info or get_joints_info(
                 self.initial_game_board.board_info, self.initial_game_board.size
@@ -59,10 +59,10 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
         logger.info("WebSocket connection of '{user}' closed: {reason}".format(user=self.name, reason=reason))
 
 
-def get_coerced_board_string(board_layers):
+def get_coerced_board_layers(board_layers):
     coerced = []
     for board_layer in board_layers:
-        coerced.append(''.join([CELL_TYPE_COERCION.get(cell_code, cell_code) for cell_code in board_layer]))
+        coerced.append([CELL_TYPE_COERCION.get(cell_code, cell_code) for cell_code in board_layer])
     return coerced
 
 

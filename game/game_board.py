@@ -8,31 +8,25 @@ logger = getLogger()
 
 
 class LodeRunnerGameBoard:
-    def __init__(self, board_layers: List[str]):
-        self.board_layers = tuple(board_layers)
+    def __init__(self, board_layers: List[List]):
+        self.board_layers = board_layers
         self.size = len(board_layers)
         self.initial_board_info = self.get_initial_board_info()
         self.board_info = deepcopy(self.initial_board_info)
 
-    def get_board_list(self, cell, direction):
-        board_list = self._get_board_list()
-        if cell:
-            self._update_board_list_by_hero(board_list=board_list, cell=cell, direction=direction)
-        return board_list
-
-    def _get_board_list(self):
+    def get_board_layers(self, cell, direction):
         board_list = []
         for y in range(self.size):
-            board_list.append(''.join([self.board_info[(x, y)] for x in range(self.size)]))
+            board_list.append([self.board_info[(x, y)] for x in range(self.size)])
+        if cell:
+            self._update_board_list_by_hero(board_list=board_list, cell=cell, direction=direction)
         return board_list
 
     def _update_board_list_by_hero(self, board_list, cell, direction):
         player_cell_type = self.get_participant_on_cell_type(cell=cell,
                                                              participant_type=PLAYER,
                                                              direction=direction)
-        board_line = list(board_list[cell[1]])
-        board_line[cell[0]] = CellGroups.get_hero_cell_type(player_cell_type)
-        board_list[cell[1]] = ''.join(board_line)
+        board_list[cell[1]][cell[0]] = CellGroups.get_hero_cell_type(player_cell_type)
 
     def get_participant_on_cell_type(self, cell, participant_type, direction):
         cell_type = self.get_cell_type(cell)
