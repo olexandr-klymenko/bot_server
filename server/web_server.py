@@ -27,15 +27,22 @@ class WebServer(Application):
         rest_resource = self.router.add_resource('/%s/{command}' % REST_ROOT)
         rest_resource.add_route('GET', self.query)
 
+        admin_resource = self.router.add_resource('/admin')
+        admin_resource.add_route('GET', self.admin_page)
+
         aiohttp_jinja2.setup(self, loader=jinja2.FileSystemLoader(join(getcwd(), TEMPLATES_DIR)))
 
-    async def play(self, request):
+        logger.info('Web server has been initialized')
+
+    @staticmethod
+    async def play(request):
         context = {}
         response = aiohttp_jinja2.render_template('index.html', request, context)
         response.headers['Content-Language'] = 'en'
         return response
 
-    async def reg(self, request):
+    @staticmethod
+    async def reg(request):
         context = {}
         response = aiohttp_jinja2.render_template('reg.html', request, context)
         response.headers['Content-Language'] = 'en'
@@ -52,3 +59,9 @@ class WebServer(Application):
 
         result = self.game_session.run_rest_action(func_name, func_args)
         return Response(text=str(result))
+
+    @staticmethod
+    async def admin_page(request):
+        context = {}
+        response = aiohttp_jinja2.render_template('admin.html', request, context)
+        return response
