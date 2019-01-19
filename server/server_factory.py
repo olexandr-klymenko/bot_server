@@ -5,7 +5,7 @@ from uuid import uuid1
 
 from autobahn.asyncio.websocket import WebSocketServerFactory
 
-from game.cell_types import SPECTATOR, PLAYER, GUARD
+from game.cell_types import SPECTATOR, PLAYER, GUARD, ADMIN
 from game.game_session import LodeRunnerGameSession
 from game.game_utils import logger
 
@@ -50,7 +50,8 @@ class BroadcastServerFactory(WebSocketServerFactory):
     def broadcast(self):
         logger.debug("Broadcasting data for websocket clients ...")
         for client_id, client in self.clients.items():
-            client.sendMessage(json.dumps(self.game_session.get_session_info(client_id)).encode())
+            if client.client_info['client_type'] != ADMIN:
+                client.sendMessage(json.dumps(self.game_session.get_session_info(client_id)).encode())
 
     def check_inactivity(self):
         for client_id, client in self.clients.items():
@@ -77,6 +78,15 @@ class BroadcastServerFactory(WebSocketServerFactory):
             logger.info("Registered {} '{}', id: '{}', client: '{}'".format(client.client_info['client_type'],
                                                                             client.client_info['name'],
                                                                             client_id, client.peer))
+            for _, cl in self.clients.items():
+                if cl.client_info['client_type'] == ADMIN:
+                    client.sendMessage(
+                        json.dumps(
+                            {client.client_info['client_type']: client.client_info['name']}
+                        ).encode())
+
+        elif client.client_info['client_type'] == ADMIN:
+            logger.info("Registered Admin client {}, id: '{}'".format(client.peer, client_id))
 
     @factory_action_decorator
     def unregister(self, client):

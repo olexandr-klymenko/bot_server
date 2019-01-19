@@ -15,7 +15,7 @@ function get_admin_socket() {
     let admin_socket = new WebSocket(admin_socket_url);
     admin_socket.onmessage = (event) => {
         let sessionInfo = JSON.parse(event.data);
-        show_players(sessionInfo[PLAYERS][SCORE]);
+        show_players(sessionInfo[PLAYERS]);
     };
 }
 
