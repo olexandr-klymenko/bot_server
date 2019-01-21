@@ -251,6 +251,7 @@ class LodeRunnerGameSession:
         direction = self._get_participant_direction_by_id(player_id)
         session_info['board'] = self.game_board.get_board_layers(cell=cell, direction=direction)
         session_info['players'] = {'score': self.score_info, 'names': self.players_cells}
+        session_info['size'] = self.game_board.size
         return session_info
 
     @rest_action_decorator

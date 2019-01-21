@@ -31,6 +31,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
         self.game_session = LodeRunnerGameSession()
         self.board_size = self.game_session.game_board.size
         self.clients = {}
+        self.admin_client = None
         self.tick()
         logger.info('Lode Runner game server has been initialized')
 
@@ -66,27 +67,42 @@ class BroadcastServerFactory(WebSocketServerFactory):
 
     @factory_action_decorator
     def register_client(self, client):
+        if client.client_info['client_type'] == ADMIN:
+            self._register_admin_client(client)
+        else:
+            self._register_non_admin_client(client)
+
+    def _register_admin_client(self, client):
+        if self.admin_client is not None:
+            logger.warning("Admin client has been already registered")
+        else:
+            self.admin_client = client
+            for _, cl in self.clients.items():
+                self.admin_client.sendMessage(
+                        json.dumps(
+                            {cl.client_info['client_type']: cl.client_info['name']}
+                        ).encode())
+            logger.info(f"Registered Admin client {client.peer}")
+
+    def _register_non_admin_client(self, client):
         client_id = uuid1()
         self.clients.update({client_id: client})
-        if client.client_info['client_type'] == SPECTATOR:
-            logger.info("Registered Spectator client {}, id: '{}'".format(client.peer, client_id))
-        elif self.game_session.is_player_name_in_registry(client.client_info['name']):
+        if self.game_session.is_player_name_in_registry(client.client_info['name']):
             logger.error("Client with id % is already registered")
-        elif client.client_info['client_type'] in [PLAYER, GUARD]:
+            return
+
+        if client.client_info['client_type'] == SPECTATOR:
+            logger.info(f"Registered Spectator client {client.peer}, id: '{client_id}'")
+            return
+
+        if client.client_info['client_type'] in [PLAYER, GUARD]:
             self.game_session.register_participant(client_id=client_id, name=client.client_info['name'],
                                                    participant_type=client.client_info['client_type'])
-            logger.info("Registered {} '{}', id: '{}', client: '{}'".format(client.client_info['client_type'],
-                                                                            client.client_info['name'],
-                                                                            client_id, client.peer))
-            for _, cl in self.clients.items():
-                if cl.client_info['client_type'] == ADMIN:
-                    client.sendMessage(
-                        json.dumps(
-                            {client.client_info['client_type']: client.client_info['name']}
-                        ).encode())
-
-        elif client.client_info['client_type'] == ADMIN:
-            logger.info("Registered Admin client {}, id: '{}'".format(client.peer, client_id))
+            self.admin_client.sendMessage(
+                json.dumps({client.client_info['client_type']: client.client_info['name']}).encode()
+            )
+            logger.info(f"Registered {client.client_info['client_type']} '{client.client_info['name']}',"
+                        f" id: '{client_id}', client: '{client.peer}'")
 
     @factory_action_decorator
     def unregister(self, client):

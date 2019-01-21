@@ -3,18 +3,20 @@ const BOARD = 'board';
 const SCORE = 'score';
 const PLAYERS = 'players';
 const NAMES = 'names';
+const SIZE = 'size';
 const hostname = window.location.hostname;
 const url = "ws://" + hostname + ":" + game_port;
-const game_board_socket_url = url + "?client_type=Player&name=" + get_url_value('user');
-const cell_size = 20;
-const basel_width = 10;
-const score_pane_size = 400;
+const gameBoardSocketUrl = url + "?client_type=Player&name=" + getUrlValue('user');
+const cellSize = 20;
+const baselWidth = 10;
+const scorePaneSize = 400;
+const scoreTitleFont = "14px arial";
 const score_font = "bold 18px arial";
-const score_font_color = "#000000";
+const scoreFontColor = "#000000";
 const player_name_font = "11px arial";
 const playerNameColor = "#ffffff";
 const imagesRoot = "static/images/";
-const cell_images_info = {
+const cellImagesInfo = {
     '=': 'breakable.png',
     '*': 'drill.png',
     '0': 'drill_filled.png',
@@ -50,13 +52,13 @@ const cell_images_info = {
     '#': 'unbreakable.png'
 };
 
-const cells_info = get_cells_info();
+const cells_info = getCellsInfo();
 
-function get_cells_info() {
+function getCellsInfo() {
     let cells_info = {};
-    for (let index in cell_images_info) {
+    for (let index in cellImagesInfo) {
         cells_info[index] = new Image();
-        cells_info[index].src = imagesRoot + cell_images_info[index]
+        cells_info[index].src = imagesRoot + cellImagesInfo[index]
     }
     return cells_info
 }
@@ -71,13 +73,7 @@ const movesInfo = {
 };
 
 
-function main() {
-    $.get("/rest/get_board_size", (data) => {
-        websocket_game(parseInt(data));
-    });
-}
-
-function get_url_value(varSearch) {
+function getUrlValue(varSearch) {
     let searchString = window.location.search.substring(1);
     let variableArray = searchString.split('&');
     for (let index = 0; index < variableArray.length; index++) {
@@ -90,74 +86,83 @@ function get_url_value(varSearch) {
     }
 }
 
-function websocket_game(board_size) {
-    let game_board_socket = game_board_socket_manager(board_size);
-    keyboard_manager(game_board_socket)
+function websocketGame() {
+    let gameBoardSocket = gameBoardSocketManager();
+    keyboardManager(gameBoardSocket)
 }
 
-function game_board_socket_manager(board_size) {
-    let game_board_socket = new WebSocket(game_board_socket_url);
-    let canvas_ctx = get_canvas_context(board_size);
+function gameBoardSocketManager() {
+    let gameBoardSocket = new WebSocket(gameBoardSocketUrl);
+    let canvasCtx = getCanvasContext();
 
-    game_board_socket.onmessage = (event) => {
+    gameBoardSocket.onmessage = (event) => {
         let sessionInfo = JSON.parse(event.data);
-        show_game_board(canvas_ctx, sessionInfo[BOARD]);
-        show_scores(sessionInfo[PLAYERS][SCORE], canvas_ctx, board_size);
-        show_players_names(sessionInfo[PLAYERS][NAMES], canvas_ctx);
+        showGameBoard(canvasCtx, sessionInfo[BOARD]);
+        showScores(canvasCtx, sessionInfo);
+        showPlayersNames(canvasCtx, sessionInfo[PLAYERS][NAMES]);
     };
-    return game_board_socket
+    return gameBoardSocket
 }
 
-function get_canvas_context(board_size) {
+function getCanvasContext() {
     let canvas = document.createElement("canvas");
     let ctx = canvas.getContext("2d");
-    canvas.width = board_size * cell_size + score_pane_size + 2 * basel_width;
-    canvas.height = board_size * cell_size + 2 * basel_width;
+    canvas.width = $(window).width() - cellSize;
+    canvas.height = $(window).height() - cellSize;
     document.body.appendChild(canvas);
     return ctx
 }
 
-function show_game_board(ctx, board_message) {
-    for (let y in board_message) {
-        for (let x in board_message[y]) {
+function showGameBoard(ctx, boardMessage) {
+    for (let y in boardMessage) {
+        for (let x in boardMessage[y]) {
             ctx.drawImage(
-                cells_info[board_message[y][x]],
-                x * cell_size + basel_width,
-                y * cell_size + basel_width
+                cells_info[boardMessage[y][x]],
+                x * cellSize + baselWidth,
+                y * cellSize + baselWidth
             );
         }
     }
     ctx.beginPath();
-    ctx.lineWidth = basel_width;
+    ctx.lineWidth = baselWidth;
     ctx.strokeStyle = "blue";
-    let basel_size = board_message.length * cell_size + basel_width;
-    ctx.rect(5, 5, basel_size, basel_size);
+    let baselSize = boardMessage.length * cellSize + baselWidth;
+    ctx.rect(baselWidth/2, baselWidth/2, baselSize, baselSize);
     ctx.stroke();
 }
 
-function show_scores(score_message, canvas_ctx, board_size) {
-    canvas_ctx.font = score_font;
-    canvas_ctx.fillStyle = score_font_color;
+function showScores(canvas_ctx, sessionInfo) {
+    let scoreMessage = sessionInfo[PLAYERS][SCORE];
+    let boardSize = sessionInfo[SIZE];
     canvas_ctx.clearRect(
-        board_size * cell_size + basel_width * 2,
+        boardSize * cellSize + baselWidth * 2,
         0,
-        board_size * cell_size + score_pane_size,
-        board_size * cell_size + cell_size
+        boardSize * cellSize + scorePaneSize,
+        boardSize * cellSize + cellSize
     );
-    for (let [playerName, score] of Object.entries(score_message)) {
-        let delta = Object.keys(score_message).indexOf(playerName) * cell_size;
+
+    canvas_ctx.font = scoreTitleFont;
+    canvas_ctx.fillStyle = scoreFontColor;
+    canvas_ctx.fillText(
+        "Players:",
+        boardSize * (cellSize + 1) + 2 * baselWidth,
+        cellSize
+    );
+    canvas_ctx.font = score_font;
+    canvas_ctx.fillStyle = scoreFontColor;
+    for (let [playerName, score] of Object.entries(scoreMessage)) {
         canvas_ctx.fillText(
             playerName + ': ' + score,
-            board_size * cell_size + cell_size + 2 * basel_width,
-            cell_size + delta)
+            boardSize * (cellSize + 1) + 2 * baselWidth,
+            cellSize * 2 + Object.keys(scoreMessage).indexOf(playerName) * cellSize)
     }
 }
 
-function show_players_names(players, canvasCtx) {
+function showPlayersNames(canvasCtx, players) {
     for (let [playerName, value] of Object.entries(players)) {
         let x = value[0];
         let y = value[1];
-        write_player_name(
+        writePlayerName(
             canvasCtx,
             playerName,
             x,
@@ -166,21 +171,21 @@ function show_players_names(players, canvasCtx) {
     }
 }
 
-function write_player_name(context, name, x, y, color) {
-    let x_real = x * cell_size + basel_width;
-    let y_real = y * cell_size - 2 + basel_width;
+function writePlayerName(context, name, x, y, color) {
+    let xReal = x * cellSize + baselWidth;
+    let yReal = y * cellSize - 2 + baselWidth;
     context.font = player_name_font;
     context.strokeStyle = 'black';
     context.lineWidth = 2;
-    context.strokeText(name, x_real, y_real);
+    context.strokeText(name, xReal, yReal);
     context.fillStyle = color;
-    context.fillText(name, x_real, y_real);
+    context.fillText(name, xReal, yReal);
 }
 
-function keyboard_manager(game_board_socket) {
+function keyboardManager(game_board_socket) {
     window.addEventListener('keyup',
         function (event) {
-            if (get_url_value('user') !== '' && event.code in movesInfo) {
+            if (getUrlValue('user') !== '' && event.code in movesInfo) {
                 game_board_socket.send(movesInfo[event.code])
             }
 
@@ -189,4 +194,4 @@ function keyboard_manager(game_board_socket) {
 }
 
 
-main();
+websocketGame();
