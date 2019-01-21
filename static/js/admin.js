@@ -21,7 +21,7 @@ function getAdminSocket() {
 }
 
 function showPlayers(players) {
-    let rootNode = document.getElementById('AdminContent');
+    let rootNode = document.getElementById('adminContent');
     let playersList = document.getElementById(PLAYERS);
     if (playersList) {
         playersList.innerHTML = ""
@@ -37,27 +37,44 @@ function showPlayers(players) {
         player.innerHTML = player.innerHTML + players[idx];
     }
     rootNode.appendChild(playersList);
+
 }
 
 function showStartStopButton(started) {
-    let rootNode = document.getElementById('AdminContent');
-    let button = document.getElementById("BUTTON");
-    if (! button) {button = document.createElement("BUTTON")}
+    let rootNode = document.getElementById('adminContent');
+    let button = document.getElementById('startStopButton');
+    if (! button) {
+        button = document.createElement('BUTTON')
+        button.id = 'startStopButton'
+    }
     if (started) {
-        button.innerText = 'Start Game';
-        button.onclick = () => {
-            $.get("/rest/start");
-            button.innerText = 'Stop Game';
-        }
+        button.innerText = 'Stop Game'
+        button.onclick = handleStop
     } else {
-        button.innerText = 'Stop Game';
-         button.onclick = () => {
-            $.get("/rest/stop");
-            button.innerText = 'Start Game';
-        }
+        button.innerText = 'Start Game'
+        button.onclick = handleStart
     }
 
     rootNode.appendChild(button);
+
+    function handleStart() {
+        $.get("/rest/start", () => {
+            console.log('Game has been started')
+            button.removeEventListener("click", handleStart)
+            button.addEventListener("click", handleStop)
+            button.innerText = "Stop Game"
+        })
+    }
+
+    function handleStop() {
+        $.get("/rest/stop", () => {
+            console.log('Game has been stopped')
+            button.removeEventListener("click", handleStop)
+            button.addEventListener("click", handleStart)
+            button.innerText = "Start Game"
+        })
+    }
 }
+
 
 main();

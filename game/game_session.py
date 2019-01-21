@@ -42,6 +42,7 @@ class LodeRunnerGameSession:
         self.registry = {}
         self.scenarios = {}
         self.is_paused = True
+        self.is_started = False
 
         self.game_board = LodeRunnerGameBoard(get_generated_board())
         self.spawn_gold_cells(GOLD_CELLS_NUMBER)
@@ -49,8 +50,18 @@ class LodeRunnerGameSession:
 
     @rest_action_decorator
     def start(self):
-        self.is_paused = False
-        self.tick()
+        if self.is_paused:
+            self.is_paused = False
+            if not self.is_started:
+                self.is_started = True
+                self.tick()
+                logger.info('Game session has been started')
+
+    @rest_action_decorator
+    def stop(self):
+        if not self.is_paused:
+            self.is_paused = True
+            logger.info('Game session has been started')
 
     def tick(self):
         if not self.is_paused:
@@ -280,24 +291,6 @@ class LodeRunnerGameSession:
             func = getattr(self, func_name)
             return func(*func_args)
         return "Rest action is not available"
-
-    @rest_action_decorator
-    def pause(self):
-        if not self.is_paused:
-            self.is_paused = True
-            message = "Game session has been paused"
-            logger.info(message)
-            return message
-        return "Game session is already paused"
-
-    @rest_action_decorator
-    def resume(self):
-        if self.is_paused:
-            self.is_paused = False
-            message = "Game session has been resumed"
-            logger.info(message)
-            return message
-        return "Game session is already resumed"
 
     @rest_action_decorator
     def get_board_size(self):

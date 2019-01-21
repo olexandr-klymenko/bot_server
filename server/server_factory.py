@@ -27,7 +27,6 @@ class BroadcastServerFactory(WebSocketServerFactory):
 
     def __init__(self, url):
         super().__init__(url)
-        self.is_locked = False
         self.game_session = LodeRunnerGameSession(self.loop, self.broadcast)
         self.board_size = self.game_session.game_board.size
         self.clients = {}
