@@ -49,10 +49,12 @@ function showStartStopButton(started) {
     }
     if (started) {
         button.innerText = 'Stop Game'
-        button.onclick = handleStop
+        button.removeEventListener("click", handleStart)
+        button.addEventListener("click", handleStop)
     } else {
         button.innerText = 'Start Game'
-        button.onclick = handleStart
+        button.removeEventListener("click", handleStop)
+        button.addEventListener("click", handleStart)
     }
 
     rootNode.appendChild(button);
