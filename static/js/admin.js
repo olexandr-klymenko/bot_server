@@ -2,35 +2,62 @@ const game_port = '9000';
 const hostname = window.location.hostname;
 const url = "ws://" + hostname + ":" + game_port;
 const admin_socket_url = url + "?client_type=Admin";
-const BOARD = 'board';
-const SCORE = 'score';
 const PLAYERS = 'players';
+const STARTED = 'started';
 
 
 function main() {
-    get_admin_socket();
+    getAdminSocket();
 }
 
-function get_admin_socket() {
-    let admin_socket = new WebSocket(admin_socket_url);
-    admin_socket.onmessage = (event) => {
+function getAdminSocket() {
+    let adminSocket = new WebSocket(admin_socket_url);
+    adminSocket.onmessage = (event) => {
         let sessionInfo = JSON.parse(event.data);
-        show_players(sessionInfo[PLAYERS]);
+        console.log(sessionInfo);
+        showPlayers(sessionInfo[PLAYERS]);
+        showStartStopButton(sessionInfo[STARTED]);
     };
 }
 
-function show_players(players) {
-    console.log(players);
+function showPlayers(players) {
+    let rootNode = document.getElementById('AdminContent');
+    let playersList = document.getElementById(PLAYERS);
+    if (playersList) {
+        playersList.innerHTML = ""
+    } else {
+        playersList = document.createElement("ul");
+    }
+    playersList.innerText = "Players:";
 
-    let players_list = document.createElement("ul");
-    players_list.setAttribute('id', 'Players');
-    Object.keys(players).forEach(function(key) {
+    playersList.setAttribute('id', PLAYERS);
+    for (let idx in players) {
         let player = document.createElement('li');
-        player.setAttribute('class',key);
-        players_list.appendChild(player)
-        player.innerHTML = player.innerHTML + key;
-    });
-    document.getElementById('AdminContent').appendChild(players_list);
+        playersList.appendChild(player);
+        player.innerHTML = player.innerHTML + players[idx];
+    }
+    rootNode.appendChild(playersList);
+}
+
+function showStartStopButton(started) {
+    let rootNode = document.getElementById('AdminContent');
+    let button = document.getElementById("BUTTON");
+    if (! button) {button = document.createElement("BUTTON")}
+    if (started) {
+        button.innerText = 'Start Game';
+        button.onclick = () => {
+            $.get("/rest/start");
+            button.innerText = 'Stop Game';
+        }
+    } else {
+        button.innerText = 'Stop Game';
+         button.onclick = () => {
+            $.get("/rest/stop");
+            button.innerText = 'Start Game';
+        }
+    }
+
+    rootNode.appendChild(button);
 }
 
 main();

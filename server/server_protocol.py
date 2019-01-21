@@ -28,7 +28,7 @@ class BroadcastServerProtocol(WebSocketServerProtocol):
     @property
     def client_info(self):
         if ADMIN in self.http_request_params['client_type']:
-            return {'client_type': ADMIN, 'name': ''}
+            return {'client_type': ADMIN, 'name': hash(self.http_headers['user-agent'])}
         if 'name' in self.http_request_params:
             return {'client_type': self.http_request_params['client_type'][0], 'name': self.http_request_params['name'][0]}
         return {'client_type': SPECTATOR, 'name': ''}

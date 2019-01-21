@@ -35,15 +35,30 @@ def rest_action_decorator(func):
 
 class LodeRunnerGameSession:
 
-    def __init__(self):
+    def __init__(self, loop, broadcast):
+        self.loop = loop
+        self.broadcast = broadcast
         self.artifacts = []
         self.registry = {}
         self.scenarios = {}
-        self.paused = False
+        self.is_paused = True
 
         self.game_board = LodeRunnerGameBoard(get_generated_board())
         self.spawn_gold_cells(GOLD_CELLS_NUMBER)
         self.tick_time = TICK_TIME
+
+    @rest_action_decorator
+    def start(self):
+        self.is_paused = False
+        self.tick()
+
+    def tick(self):
+        if not self.is_paused:
+            self.process_gravity()
+            self.process_drill_scenario()
+            self.broadcast()
+            self.allow_participants_action()
+        self.loop.call_later(self.tick_time, self.tick)
 
     @property
     def gold_cells(self):
@@ -266,13 +281,10 @@ class LodeRunnerGameSession:
             return func(*func_args)
         return "Rest action is not available"
 
-    def is_paused(self):
-        return self.paused
-
     @rest_action_decorator
     def pause(self):
-        if not self.is_paused():
-            self.paused = True
+        if not self.is_paused:
+            self.is_paused = True
             message = "Game session has been paused"
             logger.info(message)
             return message
@@ -280,8 +292,8 @@ class LodeRunnerGameSession:
 
     @rest_action_decorator
     def resume(self):
-        if self.is_paused():
-            self.paused = False
+        if self.is_paused:
+            self.is_paused = False
             message = "Game session has been resumed"
             logger.info(message)
             return message
