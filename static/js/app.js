@@ -53,6 +53,9 @@ const cellImagesInfo = {
 };
 
 const cells_info = getCellsInfo();
+let boardSize;
+let canvasCtx;
+
 
 function getCellsInfo() {
     let cells_info = {};
@@ -93,19 +96,25 @@ function websocketGame() {
 
 function gameBoardSocketManager() {
     let gameBoardSocket = new WebSocket(gameBoardSocketUrl);
-    let canvasCtx = getCanvasContext();
+    // canvasCtx = getCanvasContext();
 
     gameBoardSocket.onmessage = (event) => {
         let sessionInfo = JSON.parse(event.data);
-        showGameBoard(canvasCtx, sessionInfo[BOARD]);
-        showScores(canvasCtx, sessionInfo);
-        showPlayersNames(canvasCtx, sessionInfo[PLAYERS][NAMES]);
+        handleBoardSizeChange(sessionInfo[SIZE]);
+        showGameBoard(sessionInfo[BOARD]);
+        showScores(sessionInfo);
+        showPlayersNames(sessionInfo[PLAYERS][NAMES]);
     };
     return gameBoardSocket
 }
 
 function getCanvasContext() {
+    if (canvasCtx) {
+        let canvas = document.getElementById('canvas');
+        canvas.parentNode.removeChild(canvas);
+    }
     let canvas = document.createElement("canvas");
+    canvas.id = 'canvas';
     let ctx = canvas.getContext("2d");
     canvas.width = $(window).width() - cellSize;
     canvas.height = $(window).height() - cellSize;
@@ -113,52 +122,59 @@ function getCanvasContext() {
     return ctx
 }
 
-function showGameBoard(ctx, boardMessage) {
+function handleBoardSizeChange(size) {
+    if (size !== boardSize) {
+        boardSize = size;
+        canvasCtx = getCanvasContext()
+    }
+}
+
+function showGameBoard(boardMessage) {
     for (let y in boardMessage) {
         for (let x in boardMessage[y]) {
-            ctx.drawImage(
+            canvasCtx.drawImage(
                 cells_info[boardMessage[y][x]],
                 x * cellSize + baselWidth,
                 y * cellSize + baselWidth
             );
         }
     }
-    ctx.beginPath();
-    ctx.lineWidth = baselWidth;
-    ctx.strokeStyle = "blue";
+    canvasCtx.beginPath();
+    canvasCtx.lineWidth = baselWidth;
+    canvasCtx.strokeStyle = "blue";
     let baselSize = boardMessage.length * cellSize + baselWidth;
-    ctx.rect(baselWidth/2, baselWidth/2, baselSize, baselSize);
-    ctx.stroke();
+    canvasCtx.rect(baselWidth/2, baselWidth/2, baselSize, baselSize);
+    canvasCtx.stroke();
 }
 
-function showScores(canvas_ctx, sessionInfo) {
+function showScores(sessionInfo) {
     let scoreMessage = sessionInfo[PLAYERS][SCORE];
     let boardSize = sessionInfo[SIZE];
-    canvas_ctx.clearRect(
+    canvasCtx.clearRect(
         boardSize * cellSize + baselWidth * 2,
         0,
         boardSize * cellSize + scorePaneSize,
         boardSize * cellSize + cellSize
     );
 
-    canvas_ctx.font = scoreTitleFont;
-    canvas_ctx.fillStyle = scoreFontColor;
-    canvas_ctx.fillText(
+    canvasCtx.font = scoreTitleFont;
+    canvasCtx.fillStyle = scoreFontColor;
+    canvasCtx.fillText(
         "Players:",
         boardSize * (cellSize + 1) + 2 * baselWidth,
         cellSize
     );
-    canvas_ctx.font = score_font;
-    canvas_ctx.fillStyle = scoreFontColor;
+    canvasCtx.font = score_font;
+    canvasCtx.fillStyle = scoreFontColor;
     for (let [playerName, score] of Object.entries(scoreMessage)) {
-        canvas_ctx.fillText(
+        canvasCtx.fillText(
             playerName + ': ' + score,
             boardSize * (cellSize + 1) + 2 * baselWidth,
             cellSize * 2 + Object.keys(scoreMessage).indexOf(playerName) * cellSize)
     }
 }
 
-function showPlayersNames(canvasCtx, players) {
+function showPlayersNames(players) {
     for (let [playerName, value] of Object.entries(players)) {
         let x = value[0];
         let y = value[1];
@@ -171,15 +187,15 @@ function showPlayersNames(canvasCtx, players) {
     }
 }
 
-function writePlayerName(context, name, x, y, color) {
+function writePlayerName(name, x, y, color) {
     let xReal = x * cellSize + baselWidth;
     let yReal = y * cellSize - 2 + baselWidth;
-    context.font = player_name_font;
-    context.strokeStyle = 'black';
-    context.lineWidth = 2;
-    context.strokeText(name, xReal, yReal);
-    context.fillStyle = color;
-    context.fillText(name, xReal, yReal);
+    canvasCtx.font = player_name_font;
+    canvasCtx.strokeStyle = 'black';
+    canvasCtx.lineWidth = 2;
+    canvasCtx.strokeText(name, xReal, yReal);
+    canvasCtx.fillStyle = color;
+    canvasCtx.fillText(name, xReal, yReal);
 }
 
 function keyboardManager(game_board_socket) {

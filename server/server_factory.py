@@ -74,7 +74,8 @@ class BroadcastServerFactory(WebSocketServerFactory):
         return {
             'guards': guards,
             'players': players,
-            'started': not self.game_session.is_paused
+            'started': not self.game_session.is_paused,
+            'size': self.game_session.blocks_number
         }
 
     def _register_non_admin_client(self, client):

@@ -4,7 +4,9 @@ const url = "ws://" + hostname + ":" + game_port;
 const admin_socket_url = url + "?client_type=Admin";
 const PLAYERS = 'players';
 const STARTED = 'started';
+const SIZE = 'size';
 let adminSocket;
+let blocksNumber;
 
 
 function main() {
@@ -14,8 +16,7 @@ function main() {
     let startStopButton = document.createElement('button');
     startStopButton.id = 'startStopButton';
     let regenerateBoardButton = getRegenerateBoardButton();
-    let boardSizeInput = document.createElement('input');
-    boardSizeInput.id = 'boardSizeInput';
+    let boardSizeInput = getBoardSizeInput();
 
     document.body.appendChild(playersList);
     document.body.appendChild(startStopButton);
@@ -32,6 +33,8 @@ function getAdminSocket() {
         console.log(sessionInfo);
         showPlayers(sessionInfo[PLAYERS]);
         showStartStopButton(sessionInfo[STARTED]);
+        blocksNumber = sessionInfo[SIZE];
+        document.getElementById('boardSizeInput').value = blocksNumber
     };
     adminSocket.onclose = () => {
         console.log('Connection with game server has been dropped');
@@ -89,14 +92,29 @@ function getRegenerateBoardButton() {
     regenerateBoardButton.id = 'regenerateBoardButton';
     regenerateBoardButton.innerText = 'Regenerate Game Board';
     regenerateBoardButton.onclick = () => {
-        $.post("/admin", {"command": "regenerate_game_board"}, () => {
+        $.post("/admin", {
+            "command": "regenerate_game_board",
+            "args": document.getElementById('boardSizeInput').value
+        }, () => {
             console.log('Game board has been regenerated');
         })
     };
     return regenerateBoardButton
 }
 
+function getBoardSizeInput() {
+    let boardSizeInput = document.createElement('input');
+    boardSizeInput.type = 'text';
+    boardSizeInput.id = 'boardSizeInput';
+    boardSizeInput.oninput = (event) => {
+        if (!/^\d+$/.test(event.target.value)) {
+            alert('Invalid value ' + event.target.value);
+            event.target.value = blocksNumber
+        }
+    };
+    return boardSizeInput
+}
+
 main();
 
 // TODO: add the rest of controls (add/remove guard, add/remove gold, resize/regenerate map, etc)
-// TODO: add spinner for game started/stopped

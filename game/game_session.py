@@ -10,7 +10,7 @@ from game.game_board import LodeRunnerGameBoard
 from game.game_participants import get_participant
 from game.game_utils import get_lower_cell, get_cell_neighbours
 from game.move_types import Move
-from utils.map_generation import get_generated_board
+from utils.map_generation import get_generated_board, BLOCKS_NUMBER
 
 logger = getLogger()
 
@@ -42,8 +42,9 @@ class LodeRunnerGameSession:
         self.scenarios = {}
         self.is_paused = True
         self.is_started = False
+        self.blocks_number = BLOCKS_NUMBER
 
-        self.game_board = LodeRunnerGameBoard(get_generated_board())
+        self.game_board = LodeRunnerGameBoard(get_generated_board(self.blocks_number))
         self.spawn_gold_cells(GOLD_CELLS_NUMBER)
         self.tick_time = TICK_TIME
 
@@ -287,7 +288,7 @@ class LodeRunnerGameSession:
         if func_name in AdminCommands:
             func = getattr(self, func_name)
             return func(*func_args)
-        return "Rest action is not available"
+        return "Command is not available"
 
     @rest_action_decorator
     def get_board_size(self):
@@ -331,16 +332,23 @@ class LodeRunnerGameSession:
 
     @rest_action_decorator
     def regenerate_game_board(self, blocks_number=None):
-        self.stop()
-        self.scenarios = {}
-        self.game_board = LodeRunnerGameBoard(get_generated_board(blocks_number))
-        free_cells = self._get_free_to_spawn_cells()
-        for participant in self._participants:
-            cell = choice(free_cells)
-            participant.set_cell(cell)
-        self.artifacts = []
-        self.spawn_gold_cells(GOLD_CELLS_NUMBER)
-        self.start()
+        try:
+            blocks_number = int(blocks_number)
+        except ValueError:
+            logger.warning(f"Invalid blocks number '{blocks_number}'")
+            raise
+        else:
+            self.stop()
+            self.blocks_number = blocks_number
+            self.scenarios = {}
+            self.game_board = LodeRunnerGameBoard(get_generated_board(int(blocks_number)))
+            free_cells = self._get_free_to_spawn_cells()
+            for participant in self._participants:
+                cell = choice(free_cells)
+                participant.set_cell(cell)
+            self.artifacts = []
+            self.spawn_gold_cells(GOLD_CELLS_NUMBER)
+            self.start()
 
     def _get_free_to_spawn_cells(self):
         empty_cells = self.game_board.get_empty_cells()

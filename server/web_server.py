@@ -46,12 +46,15 @@ class WebServer(Application):
         return response
 
     async def admin_command(self, request: Request):
-        raw_body = await request.post()
-        func_name = raw_body['command']
-        func_args = raw_body.get('args', ())
+        try:
+            raw_body = await request.post()
+            func_name = raw_body['command']
+            func_args = raw_body.get('args', ())
 
-        result = self.game_session.run_admin_command(func_name, func_args)
-        return Response(text=str(result))
+            result = self.game_session.run_admin_command(func_name, func_args)
+            return Response(text=str(result))
+        except Exception as err:
+            return Response(text=str(err), status=500)
 
     @staticmethod
     async def admin_page(request):
