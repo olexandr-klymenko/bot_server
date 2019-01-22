@@ -4,7 +4,7 @@ from os.path import join
 
 import aiohttp_jinja2
 import jinja2
-from aiohttp.web import Application
+from aiohttp.web import Application, Response, Request
 
 TEMPLATES_DIR = 'templates'
 
@@ -24,6 +24,7 @@ class WebServer(Application):
         play_resource.add_route('GET', self.play)
 
         admin_resource = self.router.add_resource('/admin')
+        admin_resource.add_route('POST', self.admin_command)
         admin_resource.add_route('GET', self.admin_page)
 
         aiohttp_jinja2.setup(self, loader=jinja2.FileSystemLoader(join(getcwd(), TEMPLATES_DIR)))
@@ -43,6 +44,14 @@ class WebServer(Application):
         response = aiohttp_jinja2.render_template('reg.html', request, context)
         response.headers['Content-Language'] = 'en'
         return response
+
+    async def admin_command(self, request: Request):
+        raw_body = await request.post()
+        func_name = raw_body['command']
+        func_args = raw_body.get('args', ())
+
+        result = self.game_session.run_admin_command(func_name, func_args)
+        return Response(text=str(result))
 
     @staticmethod
     async def admin_page(request):

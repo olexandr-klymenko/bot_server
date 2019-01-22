@@ -26,6 +26,11 @@ function getAdminSocket() {
         showPlayers(sessionInfo[PLAYERS]);
         showStartStopButton(sessionInfo[STARTED]);
     };
+    adminSocket.onclose = () => {
+        console.log('Connection with game server has been dropped');
+        let startStopButton = document.getElementById('startStopButton');
+        startStopButton.disabled = true
+    };
     return adminSocket;
 }
 
@@ -54,20 +59,22 @@ function showStartStopButton(isStarted) {
 
 function handleStart() {
     let startStopButton = document.getElementById('startStopButton');
-    adminSocket.send('start');
-    console.log('Game has been started');
-    startStopButton.removeEventListener("click", handleStart);
-    startStopButton.addEventListener("click", handleStop);
-    startStopButton.innerText = "Stop Game"
+    $.post("/admin", {"command": "start"}, () => {
+        console.log('Game has been started');
+        startStopButton.removeEventListener("click", handleStart);
+        startStopButton.addEventListener("click", handleStop);
+        startStopButton.innerText = "Stop Game"
+    })
 }
 
 function handleStop() {
     let startStopButton = document.getElementById('startStopButton');
-    adminSocket.send('stop');
-    console.log('Game has been stopped');
-    startStopButton.removeEventListener("click", handleStop);
-    startStopButton.addEventListener("click", handleStart);
-    startStopButton.innerText = "Start Game"
+    $.post("/admin", {"command": "stop"}, () => {
+        console.log('Game has been stopped');
+        startStopButton.removeEventListener("click", handleStop);
+        startStopButton.addEventListener("click", handleStart);
+        startStopButton.innerText = "Start Game"
+    })
 }
 
 
