@@ -90,16 +90,19 @@ function getUrlValue(varSearch) {
 }
 
 function websocketGame() {
+    canvasCtx = getCanvasContext();
     let gameBoardSocket = gameBoardSocketManager();
     keyboardManager(gameBoardSocket)
 }
 
 function gameBoardSocketManager() {
     let gameBoardSocket = new WebSocket(gameBoardSocketUrl);
-    // canvasCtx = getCanvasContext();
 
     gameBoardSocket.onmessage = (event) => {
         let sessionInfo = JSON.parse(event.data);
+        if (!boardSize) {
+            boardSize = sessionInfo[SIZE]
+        }
         handleBoardSizeChange(sessionInfo[SIZE]);
         showGameBoard(sessionInfo[BOARD]);
         showScores(sessionInfo);
@@ -123,7 +126,8 @@ function getCanvasContext() {
 }
 
 function handleBoardSizeChange(size) {
-    if (size !== boardSize) {
+    if (boardSize && size !== boardSize) {
+        console.log('Game board size has been changed to ' + size.toString());
         boardSize = size;
         canvasCtx = getCanvasContext()
     }
@@ -179,7 +183,6 @@ function showPlayersNames(players) {
         let x = value[0];
         let y = value[1];
         writePlayerName(
-            canvasCtx,
             playerName,
             x,
             y,

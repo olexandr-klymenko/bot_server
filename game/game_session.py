@@ -22,7 +22,7 @@ GUARD_NAME_PREFIX = "AI_"
 AdminCommands = []
 
 
-def rest_action_decorator(func):
+def admin_command_decorator(func):
     AdminCommands.append(func.__name__)
 
     @wraps(func)
@@ -48,7 +48,7 @@ class LodeRunnerGameSession:
         self.spawn_gold_cells(GOLD_CELLS_NUMBER)
         self.tick_time = TICK_TIME
 
-    @rest_action_decorator
+    @admin_command_decorator
     def start(self):
         if self.is_paused:
             self.is_paused = False
@@ -57,7 +57,7 @@ class LodeRunnerGameSession:
                 self._tick()
                 logger.info('Game session has been started')
 
-    @rest_action_decorator
+    @admin_command_decorator
     def stop(self):
         if not self.is_paused:
             self.is_paused = True
@@ -75,7 +75,7 @@ class LodeRunnerGameSession:
     def gold_cells(self):
         return self.artifacts
 
-    @rest_action_decorator
+    @admin_command_decorator
     def spawn_gold_cells(self, number=1):
         self.spawn_artifacts(CellType.Gold, number)
 
@@ -280,7 +280,7 @@ class LodeRunnerGameSession:
         session_info['size'] = self.game_board.size
         return session_info
 
-    @rest_action_decorator
+    @admin_command_decorator
     def info(self):
         return AdminCommands
 
@@ -290,11 +290,11 @@ class LodeRunnerGameSession:
             return func(*func_args)
         return "Command is not available"
 
-    @rest_action_decorator
+    @admin_command_decorator
     def get_board_size(self):
         return self.game_board.size
 
-    @rest_action_decorator
+    @admin_command_decorator
     def check_user_name(self, name):
         return name in [participant.name for _, participant in self.registry.items()]
 
@@ -321,7 +321,7 @@ class LodeRunnerGameSession:
             self.artifacts.append(artifact_cell)
         self.game_board.board_info.update(artifacts_info)
 
-    @rest_action_decorator
+    @admin_command_decorator
     def set_tick_time(self, tick_time):
         try:
             new_tick_time = float(tick_time)
@@ -330,7 +330,7 @@ class LodeRunnerGameSession:
         except ValueError as e:
             return "Could't set tick time: %s" % str(e)
 
-    @rest_action_decorator
+    @admin_command_decorator
     def regenerate_game_board(self, blocks_number=None):
         try:
             blocks_number = int(blocks_number)

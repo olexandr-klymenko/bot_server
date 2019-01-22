@@ -49,11 +49,14 @@ class WebServer(Application):
         try:
             raw_body = await request.post()
             func_name = raw_body['command']
-            func_args = raw_body.get('args', ())
+            func_args = raw_body.get('args', [])
+            if func_args:
+                func_args = [func_args]
 
             result = self.game_session.run_admin_command(func_name, func_args)
             return Response(text=str(result))
         except Exception as err:
+            logger.error(str(err))
             return Response(text=str(err), status=500)
 
     @staticmethod

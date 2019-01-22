@@ -12,7 +12,7 @@ let blocksNumber;
 function main() {
     let playersList = document.createElement("ul");
     playersList.id = PLAYERS;
-    playersList.innerText = "Players:";
+
     let startStopButton = document.createElement('button');
     startStopButton.id = 'startStopButton';
     let regenerateBoardButton = getRegenerateBoardButton();
@@ -46,6 +46,8 @@ function getAdminSocket() {
 
 function showPlayers(players) {
     let playersList = document.getElementById(PLAYERS);
+    playersList.innerHTML = '';
+    playersList.innerText = "Players:";
 
     for (let idx in players) {
         let player = document.createElement('li');
