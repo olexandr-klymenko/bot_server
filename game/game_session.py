@@ -53,7 +53,7 @@ class LodeRunnerGameSession:
             self.is_paused = False
             if not self.is_started:
                 self.is_started = True
-                self.tick()
+                self._tick()
                 logger.info('Game session has been started')
 
     @rest_action_decorator
@@ -62,13 +62,13 @@ class LodeRunnerGameSession:
             self.is_paused = True
             logger.info('Game session has been started')
 
-    def tick(self):
+    def _tick(self):
         if not self.is_paused:
             self.process_gravity()
             self.process_drill_scenario()
             self.broadcast()
             self.allow_participants_action()
-        self.loop.call_later(self.tick_time, self.tick)
+        self.loop.call_later(self.tick_time, self._tick)
 
     @property
     def gold_cells(self):
@@ -330,18 +330,17 @@ class LodeRunnerGameSession:
             return "Could't set tick time: %s" % str(e)
 
     @rest_action_decorator
-    def regenerate_game_board(self):
-        self.pause()
+    def regenerate_game_board(self, blocks_number=None):
+        self.stop()
         self.scenarios = {}
-        new_board_string = get_generated_board()
-        self.game_board.__init__(new_board_string)
+        self.game_board = LodeRunnerGameBoard(get_generated_board(blocks_number))
         free_cells = self._get_free_to_spawn_cells()
         for participant in self._participants:
             cell = choice(free_cells)
             participant.set_cell(cell)
         self.artifacts = []
         self.spawn_gold_cells(GOLD_CELLS_NUMBER)
-        self.resume()
+        self.start()
 
     def _get_free_to_spawn_cells(self):
         empty_cells = self.game_board.get_empty_cells()

@@ -27,10 +27,11 @@ VERT_HORIZ_FLIP_BLOCK = [line[::-1] for line in BOARD_BLOCK[::-1]]
 BLOCKS = [BOARD_BLOCK, VERT_FLIP_BLOCK, HORIZ_FLIP_BLOCK, VERT_HORIZ_FLIP_BLOCK]
 
 
-def get_generated_board():
+def get_generated_board(blocks_number=None):
+    blocks_number = blocks_number or BLOCKS_NUMBER
     board_blocks = []
-    for vert_idx in range(BLOCKS_NUMBER):
-        current_layer_blocks = [choice(BLOCKS) for _ in range(BLOCKS_NUMBER)]
+    for vert_idx in range(blocks_number):
+        current_layer_blocks = [choice(BLOCKS) for _ in range(blocks_number)]
         board_blocks.extend(_get_concatenated_blocks_layer(current_layer_blocks))
     return board_blocks
 

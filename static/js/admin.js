@@ -4,7 +4,7 @@ const url = "ws://" + hostname + ":" + game_port;
 const admin_socket_url = url + "?client_type=Admin";
 const PLAYERS = 'players';
 const STARTED = 'started';
-let adminSocket = undefined;
+let adminSocket;
 
 
 function main() {
@@ -13,8 +13,15 @@ function main() {
     playersList.innerText = "Players:";
     let startStopButton = document.createElement('button');
     startStopButton.id = 'startStopButton';
+    let regenerateBoardButton = getRegenerateBoardButton();
+    let boardSizeInput = document.createElement('input');
+    boardSizeInput.id = 'boardSizeInput';
+
     document.body.appendChild(playersList);
     document.body.appendChild(startStopButton);
+    document.body.appendChild(document.createElement('br'));
+    document.body.appendChild(regenerateBoardButton);
+    document.body.appendChild(boardSizeInput);
     adminSocket = getAdminSocket();
 }
 
@@ -77,6 +84,17 @@ function handleStop() {
     })
 }
 
+function getRegenerateBoardButton() {
+    let regenerateBoardButton = document.createElement('button');
+    regenerateBoardButton.id = 'regenerateBoardButton';
+    regenerateBoardButton.innerText = 'Regenerate Game Board';
+    regenerateBoardButton.onclick = () => {
+        $.post("/admin", {"command": "regenerate_game_board"}, () => {
+            console.log('Game board has been regenerated');
+        })
+    };
+    return regenerateBoardButton
+}
 
 main();
 
