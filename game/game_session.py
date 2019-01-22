@@ -283,12 +283,10 @@ class LodeRunnerGameSession:
     def info(self):
         return AdminCommands
 
-    def run_admin_command(self, func_name, func_args):
-        logger.debug("Rest action request: %s %s" % (func_name, func_args))
+    def run_admin_command(self, func_name):
         if func_name in AdminCommands:
-
             func = getattr(self, func_name)
-            return func(*func_args)
+            return func()
         return "Rest action is not available"
 
     @rest_action_decorator

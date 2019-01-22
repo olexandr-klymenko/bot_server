@@ -113,7 +113,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
     @factory_action_decorator
     def process_message(self, client, message):
         if client.client_info['client_type'] == ADMIN:
-            self.game_session.run_admin_command(message, None)
+            self.game_session.run_admin_command(message)
             return
 
         if not client.client_info['client_type'] == SPECTATOR:
