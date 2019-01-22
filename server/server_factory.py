@@ -111,14 +111,18 @@ class BroadcastServerFactory(WebSocketServerFactory):
                     self.admin_client.sendMessage(json.dumps(self.game_info).encode())
 
     @factory_action_decorator
-    def process_action(self, client, action):
+    def process_message(self, client, message):
+        if client.client_info['client_type'] == ADMIN:
+            self.game_session.run_admin_command(message, None)
+            return
+
         if not client.client_info['client_type'] == SPECTATOR:
             logger.debug("From {participant} '{name}', id: '{id}' received action '{action}'".
                          format(participant=client.client_info['client_type'],
-                                action=action,
+                                action=message,
                                 name=client.client_info['name'],
                                 id=self.game_session.get_participant_id_by_name(client.client_info['name'])))
-            self.game_session.process_action(action=action, player_id=self.get_client_id(client))
+            self.game_session.process_action(action=message, player_id=self.get_client_id(client))
 
     def get_client_id(self, client):
         return dict(zip(self.clients.values(), self.clients.keys()))[client]

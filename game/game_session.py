@@ -19,12 +19,11 @@ TICK_TIME = .3
 GUARD_NAME_PREFIX = "AI_"
 
 
-class RestActions:
-    rest_actions = []
+AdminCommands = []
 
 
 def rest_action_decorator(func):
-    RestActions().rest_actions.append(func.__name__)
+    AdminCommands.append(func.__name__)
 
     @wraps(func)
     def wrapper(game_session, *args, **kwargs):
@@ -282,11 +281,11 @@ class LodeRunnerGameSession:
 
     @rest_action_decorator
     def info(self):
-        return RestActions().rest_actions
+        return AdminCommands
 
-    def run_rest_action(self, func_name, func_args):
+    def run_admin_command(self, func_name, func_args):
         logger.debug("Rest action request: %s %s" % (func_name, func_args))
-        if func_name in RestActions().rest_actions:
+        if func_name in AdminCommands:
 
             func = getattr(self, func_name)
             return func(*func_args)

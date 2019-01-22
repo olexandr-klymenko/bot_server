@@ -57,7 +57,7 @@ class WebServer(Application):
         else:
             func_args = []
 
-        result = self.game_session.run_rest_action(func_name, func_args)
+        result = self.game_session.run_admin_command(func_name, func_args)
         return Response(text=str(result))
 
     @staticmethod

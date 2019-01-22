@@ -19,7 +19,7 @@ class BroadcastServerProtocol(WebSocketServerProtocol):
 
     def onMessage(self, payload, isBinary):
         self.latest_activity_time = datetime.now()
-        self.factory.process_action(self, payload.decode())
+        self.factory.process_message(self, payload.decode())
 
     def onClose(self, wasClean, code, reason):
         super(BroadcastServerProtocol, self).onClose(wasClean, code, reason)

@@ -40,20 +40,20 @@ function showPlayers(players) {
 
 }
 
-function showStartStopButton(started) {
+function showStartStopButton(isStarted) {
     let rootNode = document.getElementById('adminContent');
     let button = document.getElementById('startStopButton');
     if (! button) {
-        button = document.createElement('BUTTON')
+        button = document.createElement('BUTTON');
         button.id = 'startStopButton'
     }
-    if (started) {
-        button.innerText = 'Stop Game'
-        button.removeEventListener("click", handleStart)
+    if (isStarted) {
+        button.innerText = 'Stop Game';
+        button.removeEventListener("click", handleStart);
         button.addEventListener("click", handleStop)
     } else {
-        button.innerText = 'Start Game'
-        button.removeEventListener("click", handleStop)
+        button.innerText = 'Start Game';
+        button.removeEventListener("click", handleStop);
         button.addEventListener("click", handleStart)
     }
 
@@ -61,18 +61,23 @@ function showStartStopButton(started) {
 
     function handleStart() {
         $.get("/rest/start", () => {
-            console.log('Game has been started')
-            button.removeEventListener("click", handleStart)
-            button.addEventListener("click", handleStop)
+            console.log('Game has been started');
+            button.removeEventListener("click", handleStart);
+            button.addEventListener("click", handleStop);
             button.innerText = "Stop Game"
         })
     }
 
     function handleStop() {
+        // adminSocket.send('stop');
+        // console.log('Game has been stopped');
+        // button.removeEventListener("click", handleStop);
+        // button.addEventListener("click", handleStart);
+        // button.innerText = "Start Game"
         $.get("/rest/stop", () => {
-            console.log('Game has been stopped')
-            button.removeEventListener("click", handleStop)
-            button.addEventListener("click", handleStart)
+            console.log('Game has been stopped');
+            button.removeEventListener("click", handleStop);
+            button.addEventListener("click", handleStart);
             button.innerText = "Start Game"
         })
     }
