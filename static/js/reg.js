@@ -3,8 +3,9 @@ function spectator() {
 }
 
 function check_user_name() {
-    var name = $("#user").val();
-    $.get("/rest/check_user_name?" + name, function (data) {
+    let name = $("#user").val();
+    $.post("/admin", {"command": "check_user_name",
+                      "args":  name}, function (data) {
         if (data === 'False') {
             $(location).attr("href", "/play?user=" + name);
         } else {
