@@ -120,3 +120,4 @@ function getBoardSizeInput() {
 main();
 
 // TODO: add the rest of controls (add/remove guard, add/remove gold, resize/regenerate map, etc)
+// TODO: implement reconnect on connection drop

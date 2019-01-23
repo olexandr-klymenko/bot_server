@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from functools import wraps
 from uuid import uuid1
 
@@ -28,23 +28,19 @@ class BroadcastServerFactory(WebSocketServerFactory):
     def __init__(self, url):
         super().__init__(url)
         self.game_session = LodeRunnerGameSession(self.loop, self.broadcast)
-        self.board_size = self.game_session.game_board.size
-        self.clients = {}
+        self.clients_info = {}
         self.admin_client = None
         logger.info('Lode Runner game server has been initialized')
 
-    def broadcast(self):
-        logger.debug("Broadcasting data for websocket clients ...")
-        for client_id, client in self.clients.items():
-            if client.client_info['client_type'] != ADMIN:
-                client.sendMessage(json.dumps(self.game_session.get_session_info(client_id)).encode())
+    @property
+    def spectators(self):
+        return [value for key, value in self.clients_info.items() if value.client_info['client_type'] == SPECTATOR]
 
-    def check_inactivity(self):
-        for client_id, client in self.clients.items():
-            if datetime.now() - client.latest_activity_time > timedelta(seconds=INACTIVITY_TIMEOUT):
-                if client_id in self.game_session.registry:
-                    self.unregister(client)
-                    logger.info("Player '%s' has been disconnected by inactivity" % client_id)
+    def broadcast(self, client_types=(SPECTATOR, PLAYER, GUARD)):
+        logger.debug("Broadcasting data for websocket clients ...")
+        for client_id, client in self.clients_info.items():
+            if client.client_info['client_type'] in client_types:
+                client.sendMessage(json.dumps(self.game_session.get_session_info(client_id)).encode())
 
     @factory_action_decorator
     def register_client(self, client):
@@ -66,7 +62,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
     def game_info(self):
         guards = 0
         players = []
-        for _, client in self.clients.items():
+        for _, client in self.clients_info.items():
             if client.client_info['client_type'] == GUARD:
                 guards += 1
             if client.client_info['client_type'] == PLAYER:
@@ -80,7 +76,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
 
     def _register_non_admin_client(self, client):
         client_id = uuid1()
-        self.clients.update({client_id: client})
+        self.clients_info.update({client_id: client})
         if self.game_session.is_player_name_in_registry(client.client_info['name']):
             logger.error("Client with id % is already registered")
             return
@@ -95,18 +91,22 @@ class BroadcastServerFactory(WebSocketServerFactory):
                                                    participant_type=client.client_info['client_type'])
             logger.info(f"Registered {client.client_info['client_type']} '{client.client_info['name']}',"
                         f" id: '{client_id}', client: '{client.peer}'")
+            for client in self.spectators:
+                client.sendMessage(json.dumps(self.game_session.get_session_info(client_id)).encode())
 
         if self.admin_client is not None:
             self.admin_client.sendMessage(json.dumps(self.game_info).encode())
 
     @factory_action_decorator
     def unregister(self, client):
-        if client in self.clients.values():
+        if client in self.clients_info.values():
             client_id = self.get_client_id(client)
             logger.info("Unregistered client '{}' '{}'".format(client.peer, client_id))
-            self.clients.pop(client_id)
+            self.clients_info.pop(client_id)
             if not client.client_info['client_type'] == SPECTATOR:
                 self.game_session.unregister_participant(client_id)
+                for client in self.spectators:
+                    client.sendMessage(json.dumps(self.game_session.get_session_info(client_id)).encode())
 
                 if self.admin_client:
                     self.admin_client.sendMessage(json.dumps(self.game_info).encode())
@@ -126,4 +126,4 @@ class BroadcastServerFactory(WebSocketServerFactory):
             self.game_session.process_action(action=message, player_id=self.get_client_id(client))
 
     def get_client_id(self, client):
-        return dict(zip(self.clients.values(), self.clients.keys()))[client]
+        return dict(zip(self.clients_info.values(), self.clients_info.keys()))[client]

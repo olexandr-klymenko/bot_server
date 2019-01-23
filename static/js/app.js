@@ -214,3 +214,5 @@ function keyboardManager(game_board_socket) {
 
 
 websocketGame();
+
+// TODO: fix board gaps on stopped game session, and empty cell of players

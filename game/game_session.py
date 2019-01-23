@@ -5,7 +5,7 @@ from logging import getLogger
 from random import choice
 from uuid import uuid1
 
-from game.cell_types import CellType, Drill, PLAYER, GUARD, DRILL_SCENARIO
+from game.cell_types import CellType, Drill, PLAYER, GUARD, DRILL_SCENARIO, SPECTATOR
 from game.game_board import LodeRunnerGameBoard
 from game.game_participants import get_participant
 from game.game_utils import get_lower_cell, get_cell_neighbours
@@ -338,6 +338,7 @@ class LodeRunnerGameSession:
             logger.warning(f"Invalid blocks number '{blocks_number}'")
             raise
         else:
+            is_paused = self.is_paused
             self.stop()
             self.blocks_number = blocks_number
             self.scenarios = {}
@@ -348,7 +349,8 @@ class LodeRunnerGameSession:
                 participant.set_cell(cell)
             self.artifacts = []
             self.spawn_gold_cells(GOLD_CELLS_NUMBER)
-            self.start()
+            self.broadcast(client_types=[SPECTATOR])
+            self.is_paused = is_paused
 
     def _get_free_to_spawn_cells(self):
         empty_cells = self.game_board.get_empty_cells()
