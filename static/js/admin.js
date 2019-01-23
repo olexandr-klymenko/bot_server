@@ -11,32 +11,38 @@ const PLAYERS_LIST_ID = 'players';
 const START_STOP_BUTTON_ID = 'startStopButton';
 const REGENERATE_BOARD_BUTTON_ID = 'regenerateBoardButton';
 const BOARD_SIZE_SELECT_ID = 'boardSizeSelect';
+const ROOT_NODE_ID = 'rootNode';
 const BOARD_BLOCKS_NUMBERS = [1, 2, 3, 4, 5];
 
 let adminSocket;
 let blocksNumber;
 let reconnectionRetryCount;
 let playersList;
-let startStopButton = undefined;
-let regenerateBoardButton = undefined;
-let boardSizeSelect = undefined;
-let adminControls = [startStopButton, regenerateBoardButton, boardSizeSelect];
+let startStopButton;
+let regenerateBoardButton;
+let boardSizeSelect;
+let rootNode;
 
 
 function main() {
+    rootNode = document.createElement("div");
+    rootNode.id = ROOT_NODE_ID;
+    document.body.appendChild(rootNode);
+
     playersList = document.createElement("ul");
     playersList.id = PLAYERS_LIST_ID;
 
     startStopButton = document.createElement('button');
     startStopButton.id = START_STOP_BUTTON_ID;
+
     regenerateBoardButton = getRegenerateBoardButton();
     boardSizeSelect = getBoardSizeInput();
 
-    document.body.appendChild(playersList);
-    document.body.appendChild(startStopButton);
-    document.body.appendChild(document.createElement('br'));
-    document.body.appendChild(regenerateBoardButton);
-    document.body.appendChild(boardSizeSelect);
+    rootNode.appendChild(playersList);
+    rootNode.appendChild(startStopButton);
+    rootNode.appendChild(document.createElement('br'));
+    rootNode.appendChild(regenerateBoardButton);
+    rootNode.appendChild(boardSizeSelect);
     adminSocket = getAdminSocket();
 }
 
@@ -52,11 +58,7 @@ function getAdminSocket() {
     };
     adminSocket.onclose = () => {
         console.log('Connection with game server has been dropped');
-        let startStopButton = document.getElementById(START_STOP_BUTTON_ID);
-        startStopButton.disabled = true;
-        regenerateBoardButton.disabled = true;
-        playersList.innerHTML = '';
-        playersList.innerText = "Players:";
+        $('#' + ROOT_NODE_ID + ' *').attr('disabled', true);
         reconnectionRetryCount--;
         if (reconnectionRetryCount > 0) {
             setTimeout(getAdminSocket, RECONNECTION_RETRY_TIMEOUT)
@@ -67,9 +69,7 @@ function getAdminSocket() {
     adminSocket.onopen = () => {
         reconnectionRetryCount = DEFAULT_RECONNECTION_RETRY_COUNT;
         console.log('Connection has been established');
-        let startStopButton = document.getElementById(START_STOP_BUTTON_ID);
-        startStopButton.disabled = false;
-        regenerateBoardButton.disabled = false;
+        $('#' + ROOT_NODE_ID + ' *').attr('disabled', false);
     };
     return adminSocket;
 }
