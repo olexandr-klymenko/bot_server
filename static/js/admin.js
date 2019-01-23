@@ -16,17 +16,21 @@ const BOARD_BLOCKS_NUMBERS = [1, 2, 3, 4, 5];
 let adminSocket;
 let blocksNumber;
 let reconnectionRetryCount;
-let regenerateBoardButton;
+let playersList;
+let startStopButton = undefined;
+let regenerateBoardButton = undefined;
+let boardSizeSelect = undefined;
+let adminControls = [startStopButton, regenerateBoardButton, boardSizeSelect];
 
 
 function main() {
-    let playersList = document.createElement("ul");
+    playersList = document.createElement("ul");
     playersList.id = PLAYERS_LIST_ID;
 
-    let startStopButton = document.createElement('button');
+    startStopButton = document.createElement('button');
     startStopButton.id = START_STOP_BUTTON_ID;
     regenerateBoardButton = getRegenerateBoardButton();
-    let boardSizeSelect = getBoardSizeInput();
+    boardSizeSelect = getBoardSizeInput();
 
     document.body.appendChild(playersList);
     document.body.appendChild(startStopButton);
@@ -50,6 +54,9 @@ function getAdminSocket() {
         console.log('Connection with game server has been dropped');
         let startStopButton = document.getElementById(START_STOP_BUTTON_ID);
         startStopButton.disabled = true;
+        regenerateBoardButton.disabled = true;
+        playersList.innerHTML = '';
+        playersList.innerText = "Players:";
         reconnectionRetryCount--;
         if (reconnectionRetryCount > 0) {
             setTimeout(getAdminSocket, RECONNECTION_RETRY_TIMEOUT)
@@ -62,6 +69,7 @@ function getAdminSocket() {
         console.log('Connection has been established');
         let startStopButton = document.getElementById(START_STOP_BUTTON_ID);
         startStopButton.disabled = false;
+        regenerateBoardButton.disabled = false;
     };
     return adminSocket;
 }
