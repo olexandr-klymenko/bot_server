@@ -6,6 +6,7 @@ const NAMES = 'names';
 const SIZE = 'size';
 const hostname = window.location.hostname;
 const url = "ws://" + hostname + ":" + game_port;
+const WEB_SOCKET_CONNECT_TIMEOUT = 500;  // NOTE: workaround to handle async websocket and webpage
 const gameBoardSocketUrl = url + "?client_type=Player&name=" + getUrlValue('user');
 const cellSize = 20;
 const baselWidth = 10;
@@ -91,8 +92,10 @@ function getUrlValue(varSearch) {
 
 function websocketGame() {
     canvasCtx = getCanvasContext();
-    let gameBoardSocket = gameBoardSocketManager();
-    keyboardManager(gameBoardSocket)
+    setTimeout(() => {
+        let gameBoardSocket = gameBoardSocketManager();
+        keyboardManager(gameBoardSocket)
+    }, WEB_SOCKET_CONNECT_TIMEOUT)
 }
 
 function gameBoardSocketManager() {
@@ -215,4 +218,4 @@ function keyboardManager(game_board_socket) {
 
 websocketGame();
 
-// TODO: fix board gaps on stopped game session, and empty cell of players
+// TODO: fix empty cell of players

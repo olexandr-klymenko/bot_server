@@ -271,7 +271,7 @@ class LodeRunnerGameSession:
             participant_object = self._get_participant_object_by_id(participant_id)
             return participant_object.get_direction()
 
-    def get_session_info(self, player_id):
+    def get_session_info(self, player_id=None):
         session_info = {}
         cell = self._get_participant_cell_by_id(player_id)
         direction = self._get_participant_direction_by_id(player_id)
