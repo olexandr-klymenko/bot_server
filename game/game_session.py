@@ -1,3 +1,4 @@
+import json
 from copy import deepcopy
 from functools import wraps
 from itertools import chain
@@ -5,8 +6,8 @@ from logging import getLogger
 from random import choice
 from uuid import uuid1
 
-from game.cell_types import CellType, Drill, DRILL_SCENARIO
 from common.utils import PLAYER, GUARD, SPECTATOR
+from game.cell_types import CellType, Drill, DRILL_SCENARIO
 from game.game_board import LodeRunnerGameBoard
 from game.game_participants import get_participant
 from game.game_utils import get_lower_cell, get_cell_neighbours
@@ -34,10 +35,10 @@ def admin_command_decorator(func):
 
 
 class LodeRunnerGameSession:
+    clients_info = None
 
-    def __init__(self, loop, broadcast):
+    def __init__(self, loop):
         self.loop = loop
-        self.broadcast = broadcast
         self.artifacts = []
         self.registry = {}
         self.scenarios = {}
@@ -48,6 +49,12 @@ class LodeRunnerGameSession:
         self.game_board = LodeRunnerGameBoard(get_generated_board(self.blocks_number))
         self.spawn_gold_cells(GOLD_CELLS_NUMBER)
         self.tick_time = TICK_TIME
+
+    def broadcast(self, client_types=(SPECTATOR, PLAYER, GUARD)):
+        logger.debug("Broadcasting data for websocket clients ...")
+        for client_id, client in self.clients_info.items():
+            if client.client_info['client_type'] in client_types:
+                client.sendMessage(json.dumps(self.get_session_info(client_id)).encode())
 
     @admin_command_decorator
     def start(self):

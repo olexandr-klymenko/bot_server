@@ -9,8 +9,6 @@ from common.utils import PLAYER, GUARD, SPECTATOR, ADMIN
 from game.game_session import LodeRunnerGameSession
 from game.game_utils import logger
 
-INACTIVITY_TIMEOUT = 100 * 60
-
 
 def factory_action_decorator(func):
     @wraps(func)
@@ -24,10 +22,10 @@ def factory_action_decorator(func):
 
 
 class BroadcastServerFactory(WebSocketServerFactory):
+    game_session: LodeRunnerGameSession = None
 
     def __init__(self, url):
         super().__init__(url)
-        self.game_session = LodeRunnerGameSession(self.loop, self.broadcast)
         self.clients_info = {}
         self.admin_client = None
         logger.info('Lode Runner game server has been initialized')
@@ -113,17 +111,12 @@ class BroadcastServerFactory(WebSocketServerFactory):
 
     @factory_action_decorator
     def process_message(self, client, message):
-        if client.client_info['client_type'] == ADMIN:
-            self.game_session.run_admin_command(message)
-            return
-
-        if not client.client_info['client_type'] == SPECTATOR:
-            logger.debug("From {participant} '{name}', id: '{id}' received action '{action}'".
-                         format(participant=client.client_info['client_type'],
-                                action=message,
-                                name=client.client_info['name'],
-                                id=self.game_session.get_participant_id_by_name(client.client_info['name'])))
-            self.game_session.process_action(action=message, player_id=self.get_client_id(client))
+        logger.debug("From {participant} '{name}', id: '{id}' received action '{action}'".
+                     format(participant=client.client_info['client_type'],
+                            action=message,
+                            name=client.client_info['name'],
+                            id=self.game_session.get_participant_id_by_name(client.client_info['name'])))
+        self.game_session.process_action(action=message, player_id=self.get_client_id(client))
 
     def get_client_id(self, client):
         return dict(zip(self.clients_info.values(), self.clients_info.keys()))[client]
