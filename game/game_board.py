@@ -2,7 +2,8 @@ from copy import deepcopy
 from logging import getLogger
 from typing import List
 
-from game.cell_types import CellType, CellGroups, PLAYER
+from game.cell_types import CellType, CellGroups
+from common.utils import PLAYER
 
 logger = getLogger()
 

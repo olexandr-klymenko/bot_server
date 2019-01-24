@@ -1,7 +1,7 @@
-const game_port = '9000';
-const hostname = window.location.hostname;
-const url = "ws://" + hostname + ":" + game_port;
-const admin_socket_url = url + "?client_type=Admin";
+const GAME_PORT = '9000';
+const HOSTNAME = window.location.hostname;
+const URL = "ws://" + HOSTNAME + ":" + GAME_PORT;
+const ADMIN_SOCKET_URL = URL + "?client_type=Admin";
 const ADMIN_URL = '/admin';
 const STARTED = 'started';
 const SIZE = 'size';
@@ -47,7 +47,7 @@ function main() {
 }
 
 function getAdminSocket() {
-    let adminSocket = new WebSocket(admin_socket_url);
+    let adminSocket = new WebSocket(ADMIN_SOCKET_URL);
     adminSocket.onmessage = (event) => {
         let sessionInfo = JSON.parse(event.data);
         console.log(sessionInfo);

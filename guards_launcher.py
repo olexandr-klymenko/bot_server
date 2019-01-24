@@ -2,7 +2,7 @@ import asyncio
 from multiprocessing import Pool
 
 from client.client_factory import GameClientFactory
-from game.cell_types import GUARD
+from common.utils import GUARD
 from utils.configure_logging import setup_logging
 
 NAMES = ['1', '2', '3', '4']

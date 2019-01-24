@@ -5,7 +5,8 @@ from random import choice
 
 from autobahn.asyncio.websocket import WebSocketClientProtocol
 
-from game.cell_types import PLAYER, GUARD, CellType, CellGroups, CELL_TYPE_COERCION
+from game.cell_types import CellType, CellGroups, CELL_TYPE_COERCION
+from common.utils import PLAYER, GUARD
 from game.game_board import LodeRunnerGameBoard
 from game.game_utils import get_joints_info
 from game.move_types import Move

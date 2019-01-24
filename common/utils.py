@@ -1,0 +1,5 @@
+PLAYER = 'Player'
+GUARD = 'Guard'
+SPECTATOR = 'Spectator'
+ADMIN = 'Admin'
+GUARD_MANAGER = 'GuardManager'

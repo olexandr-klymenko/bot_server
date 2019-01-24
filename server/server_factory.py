@@ -5,7 +5,7 @@ from uuid import uuid1
 
 from autobahn.asyncio.websocket import WebSocketServerFactory
 
-from game.cell_types import SPECTATOR, PLAYER, GUARD, ADMIN
+from common.utils import PLAYER, GUARD, SPECTATOR, ADMIN
 from game.game_session import LodeRunnerGameSession
 from game.game_utils import logger
 

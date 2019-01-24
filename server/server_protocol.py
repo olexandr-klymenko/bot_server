@@ -1,9 +1,8 @@
-from datetime import datetime
 from logging import getLogger
 
 from autobahn.asyncio.websocket import WebSocketServerProtocol
 
-from game.cell_types import SPECTATOR, ADMIN
+from common.utils import SPECTATOR, ADMIN
 
 logger = getLogger()
 

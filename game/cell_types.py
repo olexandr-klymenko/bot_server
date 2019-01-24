@@ -1,12 +1,6 @@
 from game.move_types import CharCode
 
 
-PLAYER = 'Player'
-GUARD = 'Guard'
-SPECTATOR = 'Spectator'
-ADMIN = 'Admin'
-
-
 class CellType(CharCode):
     Empty = ' '
     UnbreakableBrick = '#'

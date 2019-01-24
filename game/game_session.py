@@ -5,7 +5,8 @@ from logging import getLogger
 from random import choice
 from uuid import uuid1
 
-from game.cell_types import CellType, Drill, PLAYER, GUARD, DRILL_SCENARIO, SPECTATOR
+from game.cell_types import CellType, Drill, DRILL_SCENARIO
+from common.utils import PLAYER, GUARD, SPECTATOR
 from game.game_board import LodeRunnerGameBoard
 from game.game_participants import get_participant
 from game.game_utils import get_lower_cell, get_cell_neighbours
