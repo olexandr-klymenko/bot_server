@@ -5,6 +5,7 @@ const ADMIN_SOCKET_URL = URL + "?client_type=Admin";
 const ADMIN_URL = '/admin';
 const STARTED = 'started';
 const SIZE = 'size';
+const GUARDS = 'guards';
 const DEFAULT_RECONNECTION_RETRY_COUNT = 10;
 const RECONNECTION_RETRY_TIMEOUT = 1000;
 const PLAYERS_LIST_ID = 'players';
@@ -15,12 +16,14 @@ const ROOT_NODE_ID = 'rootNode';
 const BOARD_BLOCKS_NUMBERS = [1, 2, 3, 4, 5];
 
 let adminSocket;
-let blocksNumber;
 let reconnectionRetryCount;
 let playersList;
 let startStopButton;
 let regenerateBoardButton;
 let boardSizeSelect;
+let guardsControlBlock;
+let guardsNumberButton;
+let updateGuardsNumberButton;
 let rootNode;
 
 
@@ -38,11 +41,14 @@ function main() {
     regenerateBoardButton = getRegenerateBoardButton();
     boardSizeSelect = getBoardSizeInput();
 
+    guardsControlBlock = getGuardsControlBlock();
+
     rootNode.appendChild(playersList);
     rootNode.appendChild(startStopButton);
     rootNode.appendChild(document.createElement('br'));
     rootNode.appendChild(regenerateBoardButton);
     rootNode.appendChild(boardSizeSelect);
+    rootNode.appendChild(guardsControlBlock);
     adminSocket = getAdminSocket();
 }
 
@@ -53,8 +59,8 @@ function getAdminSocket() {
         console.log(sessionInfo);
         showPlayers(sessionInfo[PLAYERS_LIST_ID]);
         showStartStopButton(sessionInfo[STARTED]);
-        blocksNumber = sessionInfo[SIZE];
-        document.getElementById(BOARD_SIZE_SELECT_ID).value = blocksNumber
+        document.getElementById(BOARD_SIZE_SELECT_ID).value = sessionInfo[SIZE];
+        guardsNumberButton.innerText = sessionInfo[GUARDS]
     };
     adminSocket.onclose = () => {
         console.log('Connection with game server has been dropped');
@@ -143,6 +149,31 @@ function getBoardSizeInput() {
         boardSizeSelect.appendChild(option);
     }
     return boardSizeSelect
+}
+
+function getGuardsControlBlock() {
+    let guardsControlBlock = document.createElement('div');
+    updateGuardsNumberButton = document.createElement('button');
+    updateGuardsNumberButton.innerText = 'Update guards number';
+    updateGuardsNumberButton.onclick = () => {
+        $.post(ADMIN_URL, {
+            "command": "update_guards_number",
+            "args": guardsNumberButton.innerText
+        }, () => {
+            console.log('Guards number has been updated');
+        })
+    };
+    let decreaseGuardsNumberButton = document.createElement('button');
+    decreaseGuardsNumberButton.innerText = '-';
+    guardsNumberButton = document.createElement('button');
+    let increaseGuardsNumberButton = document.createElement('button');
+    increaseGuardsNumberButton.innerText = '+';
+
+    guardsControlBlock.appendChild(updateGuardsNumberButton);
+    guardsControlBlock.appendChild(decreaseGuardsNumberButton);
+    guardsControlBlock.appendChild(guardsNumberButton);
+    guardsControlBlock.appendChild(increaseGuardsNumberButton);
+    return guardsControlBlock
 }
 
 main();

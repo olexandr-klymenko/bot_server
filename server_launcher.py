@@ -1,14 +1,15 @@
-from argparse import ArgumentParser
-
 import asyncio
 
+from argparse import ArgumentParser
+
+from client.guard_manager import GuardManagerClientFactory
 from game.game_session import LodeRunnerGameSession
-from utils.configure_logging import setup_logging
+from server.server_factory import BroadcastServerFactory
 from server.server_protocol import BroadcastServerProtocol
 from server.web_server import WebServer
-from server.server_factory import BroadcastServerFactory
+from utils.configure_logging import setup_logging
 
-GAME_SERVER_WEB_SOCKET_URL = u"ws://0.0.0.0:%s"
+GAME_SERVER_WEB_SOCKET_URL = "ws://0.0.0.0"
 GAME_SERVER_WEB_SOCKET_PORT = 9000
 FRONTEND_PORT = 8080
 DEBUG = False
@@ -22,7 +23,7 @@ def main():
 
     game_session = LodeRunnerGameSession(loop)
 
-    game_factory = BroadcastServerFactory(url=GAME_SERVER_WEB_SOCKET_URL % cmd_args.port)
+    game_factory = BroadcastServerFactory(url=f"{GAME_SERVER_WEB_SOCKET_URL}:{cmd_args.port}")
     game_session.clients_info = game_factory.clients_info
     game_factory.game_session = game_session
     game_factory.protocol = BroadcastServerProtocol
@@ -30,6 +31,9 @@ def main():
     game_ws_server = loop.run_until_complete(
         loop.create_server(game_factory, '0.0.0.0', cmd_args.port)
     )
+
+    guard_manager = GuardManagerClientFactory(url=f"{GAME_SERVER_WEB_SOCKET_URL}:{cmd_args.port}")
+    loop.run_until_complete(loop.create_connection(guard_manager, '127.0.0.1', cmd_args.port))
 
     web_app = WebServer(loop, game_session)
     web_server = loop.run_until_complete(

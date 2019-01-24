@@ -5,7 +5,7 @@ from uuid import uuid1
 
 from autobahn.asyncio.websocket import WebSocketServerFactory
 
-from common.utils import PLAYER, GUARD, SPECTATOR, ADMIN
+from common.utils import PLAYER, GUARD, SPECTATOR, ADMIN, GUARD_MANAGER
 from game.game_session import LodeRunnerGameSession
 from game.game_utils import logger
 
@@ -28,6 +28,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
         super().__init__(url)
         self.clients_info = {}
         self.admin_client = None
+        self.guard_manager_client = None
         logger.info('Lode Runner game server has been initialized')
 
     @property
@@ -44,6 +45,9 @@ class BroadcastServerFactory(WebSocketServerFactory):
     def register_client(self, client):
         if client.client_info['client_type'] == ADMIN:
             self._register_admin_client(client)
+        elif client.client_info['client_type'] == GUARD_MANAGER:
+            logger.info(f"Registered Guard Manager client {client.peer}")
+            self.game_session.guard_manager = client
         else:
             self._register_non_admin_client(client)
 
@@ -58,15 +62,15 @@ class BroadcastServerFactory(WebSocketServerFactory):
 
     @property
     def game_info(self):
-        guards = 0
+        guards_number = 0
         players = []
         for _, client in self.clients_info.items():
             if client.client_info['client_type'] == GUARD:
-                guards += 1
+                guards_number += 1
             if client.client_info['client_type'] == PLAYER:
                 players.append(client.client_info['name'])
         return {
-            'guards': guards,
+            'guards': guards_number,
             'players': players,
             'started': not self.game_session.is_paused,
             'size': self.game_session.blocks_number
