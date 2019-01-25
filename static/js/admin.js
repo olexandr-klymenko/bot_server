@@ -165,9 +165,18 @@ function getGuardsControlBlock() {
     };
     let decreaseGuardsNumberButton = document.createElement('button');
     decreaseGuardsNumberButton.innerText = '-';
+    decreaseGuardsNumberButton.onclick = () => {
+        if (guardsNumberButton.innerText !== '0') {
+            guardsNumberButton.innerText = parseInt(guardsNumberButton.innerText) - 1;
+        }
+    };
+
     guardsNumberButton = document.createElement('button');
     let increaseGuardsNumberButton = document.createElement('button');
     increaseGuardsNumberButton.innerText = '+';
+    increaseGuardsNumberButton.onclick = () => {
+        guardsNumberButton.innerText = parseInt(guardsNumberButton.innerText) + 1;
+    };
 
     guardsControlBlock.appendChild(updateGuardsNumberButton);
     guardsControlBlock.appendChild(decreaseGuardsNumberButton);

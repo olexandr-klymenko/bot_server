@@ -112,6 +112,11 @@ class BroadcastServerFactory(WebSocketServerFactory):
 
                 if self.admin_client:
                     self.admin_client.sendMessage(json.dumps(self.game_info).encode())
+        # else:
+        #     if client is self.admin_client:
+        #         logger.info(f"Unregistered admin client '{client.peer}'")
+        #     elif client is self.guard_manager_client:
+        #         logger.info(f"Unregistered guard manager client '{client.peer}'")
 
     @factory_action_decorator
     def process_message(self, client, message):

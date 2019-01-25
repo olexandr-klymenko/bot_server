@@ -90,7 +90,7 @@ class LodeRunnerGameSession:
 
     @admin_command_decorator
     def update_guards_number(self, number):
-        self.guard_manager.sendMessage(f'number: {number}'.encode())
+        self.guard_manager.sendMessage(f'{number}'.encode())
 
     def register_participant(self, client_id, name, participant_type):
         cell = choice(self._get_free_to_spawn_cells())

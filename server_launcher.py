@@ -1,8 +1,6 @@
 import asyncio
-
 from argparse import ArgumentParser
 
-from client.guard_manager import GuardManagerClientFactory
 from game.game_session import LodeRunnerGameSession
 from server.server_factory import BroadcastServerFactory
 from server.server_protocol import BroadcastServerProtocol
@@ -31,9 +29,6 @@ def main():
     game_ws_server = loop.run_until_complete(
         loop.create_server(game_factory, '0.0.0.0', cmd_args.port)
     )
-
-    guard_manager = GuardManagerClientFactory(url=f"{GAME_SERVER_WEB_SOCKET_URL}:{cmd_args.port}")
-    loop.run_until_complete(loop.create_connection(guard_manager, '127.0.0.1', cmd_args.port))
 
     web_app = WebServer(loop, game_session)
     web_server = loop.run_until_complete(
