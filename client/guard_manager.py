@@ -24,6 +24,7 @@ class GuardManagerClientFactory(WebSocketClientFactory):
 
 class GuardManagerClientProtocol(WebSocketClientProtocol):
     guards_tasks = []
+    guards_clients = []
 
     def onConnect(self, response):
         logger.info(f"Connected to WebSocket: {response.peer}")
@@ -33,11 +34,16 @@ class GuardManagerClientProtocol(WebSocketClientProtocol):
             logger.info(f'Incoming message to guard manager: {payload}')
             requested_guards_number = json.loads(payload)
             logger.info(f"Requested guards number: {requested_guards_number}, actual: {len(self.guards_tasks)}")
-            if requested_guards_number > len(self.guards_tasks):
+            if requested_guards_number != len(self.guards_tasks):
+                # for task in self.guards_tasks:
+                #     next(task)
                 logger.info('Running guard ...')
-                self.run_guard()
+                for idx in range(requested_guards_number):
+                    self.guards_tasks.append(self.run_guard())
+
+                asyncio.gather(*self.guards_tasks)
             else:
-                logger.info('')
+                logger.info('Guards number remains unchanged')
 
     def run_guard(self):
         loop = asyncio.get_event_loop()
@@ -48,8 +54,8 @@ class GuardManagerClientProtocol(WebSocketClientProtocol):
             client_type=GUARD,
             name=uuid4()
         )
-        task = loop.create_connection(guard_factory, '127.0.0.1', GAME_SERVER_WEB_SOCKET_PORT)
-        loop.run_until_complete(task)
-        self.guards_tasks.append(task)
+        self.guards_clients.append(guard_factory)
+        return loop.create_connection(guard_factory, '127.0.0.1', GAME_SERVER_WEB_SOCKET_PORT)
+
 
 # TODO: Finish Guard Manager
