@@ -39,7 +39,7 @@ function main() {
     startStopButton.id = START_STOP_BUTTON_ID;
 
     regenerateBoardButton = getRegenerateBoardButton();
-    boardSizeSelect = getBoardSizeInput();
+    boardSizeSelect = getBoardSizeSelect();
 
     guardsControlBlock = getGuardsControlBlock();
 
@@ -141,11 +141,11 @@ function getRegenerateBoardButton() {
     return regenerateBoardButton
 }
 
-function getBoardSizeInput() {
+function getBoardSizeSelect() {
     let boardSizeSelect = document.createElement('select');
     boardSizeSelect.id = BOARD_SIZE_SELECT_ID;
     for(let idx = 0; idx < BOARD_BLOCKS_NUMBERS.length; idx++) {
-        let option = new Option(BOARD_BLOCKS_NUMBERS[idx], BOARD_BLOCKS_NUMBERS[idx] + 1);
+        let option = new Option(BOARD_BLOCKS_NUMBERS[idx], BOARD_BLOCKS_NUMBERS[idx]);
         boardSizeSelect.appendChild(option);
     }
     return boardSizeSelect
@@ -188,3 +188,4 @@ function getGuardsControlBlock() {
 main();
 
 // TODO: add the rest of controls (add/remove guard, add/remove gold, resize/regenerate map, etc)
+// TODO: set session time

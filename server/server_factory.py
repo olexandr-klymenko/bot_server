@@ -62,19 +62,20 @@ class BroadcastServerFactory(WebSocketServerFactory):
 
     @property
     def game_info(self):
-        guards_number = 0
-        players = []
-        for _, client in self.clients_info.items():
-            if client.client_info['client_type'] == GUARD:
-                guards_number += 1
-            if client.client_info['client_type'] == PLAYER:
-                players.append(client.client_info['name'])
         return {
-            'guards': guards_number,
-            'players': players,
+            'guards': len(self.guard_clients),
+            'players': [client.client_info['name'] for client in self.player_clients],
             'started': not self.game_session.is_paused,
             'size': self.game_session.blocks_number
         }
+
+    @property
+    def guard_clients(self):
+        return [client for _, client in self.clients_info.items() if client.client_info['client_type'] == GUARD]
+
+    @property
+    def player_clients(self):
+        return [client for _, client in self.clients_info.items() if client.client_info['client_type'] == PLAYER]
 
     def _register_non_admin_client(self, client):
         client_id = uuid1()
@@ -125,7 +126,16 @@ class BroadcastServerFactory(WebSocketServerFactory):
                             action=message,
                             name=client.client_info['name'],
                             id=self.game_session.get_participant_id_by_name(client.client_info['name'])))
-        self.game_session.process_action(action=message, player_id=self.get_client_id(client))
+
+        if client.client_info['client_type'] == GUARD_MANAGER:
+            pass
+            self._process_message_from_guard_manager()
+        else:
+            self.game_session.process_action(action=message, player_id=self.get_client_id(client))
 
     def get_client_id(self, client):
         return dict(zip(self.clients_info.values(), self.clients_info.keys()))[client]
+
+    def _process_message_from_guard_manager(self):
+        for guard in self.guard_clients:
+            guard.sendClose()
