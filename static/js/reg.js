@@ -15,3 +15,6 @@ function check_user_name() {
         }
     });
 }
+
+// TODO: Move html elements creation to js
+// TODO: Add admin button link

@@ -37,10 +37,11 @@ class GuardManagerClientProtocol(WebSocketClientProtocol):
                 self.sendMessage(b'Destroy guards')
                 self.guards_tasks = []
                 gc.collect()
-                logger.info(f'Spawning {requested_guards_number} guards ...')
-                for idx in range(requested_guards_number):
-                    self.guards_tasks.append(run_guard())
-                asyncio.gather(*self.guards_tasks)
+                if requested_guards_number:
+                    logger.info(f'Spawning {requested_guards_number} guards ...')
+                    for idx in range(requested_guards_number):
+                        self.guards_tasks.append(run_guard())
+                    asyncio.gather(*self.guards_tasks)
             else:
                 logger.info('Guards number remains unchanged')
 

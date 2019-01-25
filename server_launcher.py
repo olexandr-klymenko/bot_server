@@ -1,4 +1,5 @@
 import asyncio
+
 from argparse import ArgumentParser
 
 from game.game_session import LodeRunnerGameSession
