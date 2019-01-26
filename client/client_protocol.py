@@ -1,24 +1,20 @@
-import json
 from itertools import chain
+
+import json
+from autobahn.asyncio.websocket import WebSocketClientProtocol
 from logging import getLogger
 from random import choice
 
-from autobahn.asyncio.websocket import WebSocketClientProtocol
-
-from game.cell_types import CellType, CellGroups, CELL_TYPE_COERCION
-from common.utils import PLAYER, GUARD
-from game.game_board import LodeRunnerGameBoard
-from game.game_utils import get_joints_info
-from game.move_types import Move
+from common.utils import (PLAYER, GUARD, CellType, get_board_info, get_cell_neighbours, get_upper_cell,
+                          Move, CellGroups, CELL_TYPE_COERCION, get_lower_cell)
 
 logger = getLogger()
 
 
 class LodeRunnerClientProtocol(WebSocketClientProtocol):
     target_cell_types = None
-    initial_game_board = None
     joints_info = None
-    path_finder_klas = None
+    path_finder_cls = None
 
     @property
     def name(self):
@@ -40,16 +36,17 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
     def onMessage(self, payload, isBinary):
         if not isBinary:
             board_layers = json.loads(payload.decode())['board']
-            self.initial_game_board = self.initial_game_board or LodeRunnerGameBoard(
-                get_coerced_board_layers(board_layers)
-            )
+            board_info = get_board_info(board_layers)
+
             self.joints_info = self.joints_info or get_joints_info(
-                self.initial_game_board.board_info, self.initial_game_board.size
+                get_board_info(get_coerced_board_layers(board_layers)),
+                len(board_layers)
             )
-            self.path_finder_klas = self.path_finder_klas or path_finder_factory(self.joints_info,
-                                                                                 self.target_cell_types
-                                                                                 )
-            path_finder = self.path_finder_klas(board_layers)
+
+            self.path_finder_cls = self.path_finder_cls or path_finder_factory(self.joints_info,
+                                                                               self.target_cell_types
+                                                                               )
+            path_finder = self.path_finder_cls(board_info)
             logger.debug("My cell: %s" % str(path_finder.my_cell))
             logger.debug("Gold cells: %s" % path_finder.target_cells)
             action = path_finder.get_routed_move_action()
@@ -68,19 +65,18 @@ def get_coerced_board_layers(board_layers):
 
 
 def path_finder_factory(joints_info, target_cell_types):
-
     class ClientPathFinder:
         joints_info = None
         target_cell_types = None
 
-        def __init__(self, board_layers):
-            self.game_board = LodeRunnerGameBoard(board_layers)
+        def __init__(self, board_info):
+            self.board_info = board_info
             self.my_cell, self.target_cells = self.my_cell_and_gold()
 
         def my_cell_and_gold(self):
             gold_cells = []
             my_cell = None
-            for cell, cell_code in self.game_board.board_info.items():
+            for cell, cell_code in self.board_info.items():
                 if cell_code in CellGroups.HeroCellTypes:
                     my_cell = cell
                 elif cell_code in self.target_cell_types:
@@ -138,3 +134,40 @@ def get_move_action(start_cell, end_cell):
     if end_cell[1] - start_cell[1] == 1:
         return Move.Down
     return Move.Up
+
+
+def get_joints_info(board_info, size):
+    joints_info = {}
+    for vertical in range(size):
+        for horizontal in range(size):
+            cell = horizontal, vertical
+            cell_joints = []
+            for neighbour_cell in get_cell_neighbours(cell, board_info):
+                if is_pass(cell, neighbour_cell, board_info):
+                    cell_joints.append(neighbour_cell)
+            joints_info.update({cell: cell_joints})
+    return joints_info
+
+
+def is_pass(start_cell, end_cell, board_info):
+    if board_info[end_cell] not in [CellType.Empty, CellType.Ladder, CellType.Pipe]:
+        return False
+
+    if board_info[start_cell] not in [CellType.Empty, CellType.Ladder, CellType.Pipe]:
+        return False
+
+    if (
+            board_info[start_cell] != CellType.Ladder
+            and end_cell == get_upper_cell(start_cell)
+    ):
+        return False
+
+    if (
+            get_lower_cell(start_cell) in board_info
+            and board_info[start_cell] in [CellType.Empty, CellType.Gold]
+            and board_info[get_lower_cell(start_cell)] in [CellType.Empty, CellType.Pipe]
+            and end_cell != get_lower_cell(start_cell)
+    ):
+        return False
+
+    return True

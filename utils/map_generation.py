@@ -2,9 +2,6 @@ from itertools import chain
 from random import choice
 
 
-__all__ = ['get_generated_board']
-
-
 BOARD_BLOCK = [
 #    123456789
     '     H=HH',  #1

@@ -1,13 +1,14 @@
 import json
+from autobahn.asyncio.websocket import WebSocketServerFactory
 from datetime import datetime
 from functools import wraps
+from logging import getLogger
 from uuid import uuid1
-
-from autobahn.asyncio.websocket import WebSocketServerFactory
 
 from common.utils import PLAYER, GUARD, SPECTATOR, ADMIN, GUARD_MANAGER
 from game.game_session import LodeRunnerGameSession
-from game.game_utils import logger
+
+logger = getLogger()
 
 
 def factory_action_decorator(func):

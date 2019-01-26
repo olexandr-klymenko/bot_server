@@ -6,12 +6,10 @@ from logging import getLogger
 from random import choice
 from uuid import uuid1
 
-from common.utils import PLAYER, GUARD, SPECTATOR
-from game.cell_types import CellType, Drill, DRILL_SCENARIO
+from common.utils import PLAYER, GUARD, SPECTATOR, CellType, get_cell_neighbours, Move, get_lower_cell
+from game.cell_types import Drill, DRILL_SCENARIO
 from game.game_board import LodeRunnerGameBoard
 from game.game_participants import get_participant
-from game.game_utils import get_lower_cell, get_cell_neighbours
-from game.move_types import Move
 from utils.map_generation import get_generated_board, BLOCKS_NUMBER
 
 logger = getLogger()

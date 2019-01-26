@@ -1,7 +1,7 @@
 from logging import getLogger
 from random import choice
 
-from game.move_types import Move
+from common.utils import Move
 
 logger = getLogger()
 

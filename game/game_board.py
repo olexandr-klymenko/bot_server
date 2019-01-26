@@ -2,8 +2,7 @@ from copy import deepcopy
 from logging import getLogger
 from typing import List
 
-from game.cell_types import CellType, CellGroups
-from common.utils import PLAYER
+from common.utils import PLAYER, CellType, get_board_info, CellGroups
 
 logger = getLogger()
 
@@ -12,7 +11,7 @@ class LodeRunnerGameBoard:
     def __init__(self, board_layers: List[List]):
         self.board_layers = board_layers
         self.size = len(board_layers)
-        self.initial_board_info = self.get_initial_board_info()
+        self.initial_board_info = get_board_info(board_layers)
         self.board_info = deepcopy(self.initial_board_info)
 
     def get_board_layers(self, cell, direction):
@@ -46,17 +45,6 @@ class LodeRunnerGameBoard:
     def is_cell_drillable(self, cell):
         return self._is_cell_valid(cell) and self.get_cell_type(cell) == CellType.DrillableBrick
 
-    def get_initial_board_info(self):
-        board_info = {}
-        for y_coord, line in enumerate(self.board_layers):
-            for x_coord, cell_code in enumerate(line):
-                if CellType.is_code_valid(cell_code):
-                    board_info[(x_coord, y_coord)] = cell_code
-                else:
-                    raise Exception("Cell code %s is invalid. Valid codes: %s" %
-                                    (cell_code, CellType.get_valid_codes()))
-        return board_info
-
     def process_move(self, current_cell, next_cell, next_cell_type, is_cell_in_scenarios):
         if not is_cell_in_scenarios:
             self.update_board(cell=current_cell, cell_type=self.get_cell_type(current_cell))
@@ -81,3 +69,5 @@ class LodeRunnerGameBoard:
 
 def get_index_from_cell(player_point, size):
     return player_point[1] * size + player_point[0]
+
+# TODO: implement rectangular board support
