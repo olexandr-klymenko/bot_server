@@ -17,8 +17,7 @@ def get_board_info(board_layers):
     return board_info
 
 
-class CharCode(object):
-
+class CharCode:
     @classmethod
     def get_valid_codes(cls):
         return [getattr(cls, attr) for attr in dir(cls)
