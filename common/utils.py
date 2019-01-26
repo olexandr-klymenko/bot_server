@@ -145,3 +145,8 @@ def get_left_cell(cell):
 
 def get_right_cell(cell):
     return cell[0] + 1, cell[1]
+
+
+class Drill(CharCode):
+    DrillRight = 'DrillRight'
+    DrillLeft = 'DrillLeft'

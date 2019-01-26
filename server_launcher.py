@@ -2,6 +2,7 @@ import asyncio
 
 from argparse import ArgumentParser
 
+from game.game_board import LodeRunnerGameBoard
 from game.game_session import LodeRunnerGameSession
 from server.server_factory import BroadcastServerFactory
 from server.server_protocol import BroadcastServerProtocol
@@ -20,7 +21,8 @@ def main():
 
     loop = asyncio.get_event_loop()
 
-    game_session = LodeRunnerGameSession(loop)
+    game_board = LodeRunnerGameBoard.from_blocks_number()
+    game_session = LodeRunnerGameSession(loop, game_board)
 
     game_factory = BroadcastServerFactory(url=f"{GAME_SERVER_WEB_SOCKET_URL}:{cmd_args.port}")
     game_session.clients_info = game_factory.clients_info

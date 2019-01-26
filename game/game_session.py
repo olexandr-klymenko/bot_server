@@ -1,23 +1,23 @@
+from itertools import chain
 import json
 from copy import deepcopy
 from functools import wraps
-from itertools import chain
 from logging import getLogger
 from random import choice
-from uuid import uuid1
 
-from common.utils import PLAYER, GUARD, SPECTATOR, CellType, get_cell_neighbours, Move, get_lower_cell
-from game.cell_types import Drill, DRILL_SCENARIO
+from common.utils import PLAYER, GUARD, SPECTATOR, CellType, get_cell_neighbours, Move, get_lower_cell, Drill
 from game.game_board import LodeRunnerGameBoard
 from game.game_participants import get_participant
-from utils.map_generation import get_generated_board, BLOCKS_NUMBER
 
 logger = getLogger()
 
 GOLD_CELLS_NUMBER = 30
 TICK_TIME = .3
 GUARD_NAME_PREFIX = "AI_"
-
+DRILL_SCENARIO = [CellType.Drill, CellType.Empty, CellType.Empty, CellType.Empty,
+                  CellType.Empty, CellType.Empty, CellType.PitFill4, CellType.PitFill3,
+                  CellType.PitFill2, CellType.PitFill1, CellType.PitFilled,
+                  CellType.DrillableBrick]
 
 AdminCommands = []
 
@@ -36,18 +36,16 @@ class LodeRunnerGameSession:
     clients_info = None
     guard_manager = None
 
-    def __init__(self, loop):
+    def __init__(self, loop, game_board: LodeRunnerGameBoard):
         self.loop = loop
-        self.artifacts = []
+        self.game_board = game_board
+        self.gold_cells = []
         self.registry = {}
         self.scenarios = {}
         self.is_paused = True
         self.is_started = False
-        self.blocks_number = BLOCKS_NUMBER
-
-        self.game_board = LodeRunnerGameBoard(get_generated_board(self.blocks_number))
-        self.spawn_gold_cells(GOLD_CELLS_NUMBER)
         self.tick_time = TICK_TIME
+        self.spawn_gold_cells()
 
     def broadcast(self, client_types=(SPECTATOR, PLAYER, GUARD)):
         logger.debug("Broadcasting data for websocket clients ...")
@@ -78,13 +76,15 @@ class LodeRunnerGameSession:
             self.allow_participants_action()
         self.loop.call_later(self.tick_time, self._tick)
 
-    @property
-    def gold_cells(self):
-        return self.artifacts
-
     @admin_command_decorator
-    def spawn_gold_cells(self, number=1):
-        self.spawn_artifacts(CellType.Gold, number)
+    def spawn_gold_cells(self, number=GOLD_CELLS_NUMBER):
+        artifacts_info = {}
+        free_to_spawn_cells = self._get_free_to_spawn_cells()
+        for index in range(int(number)):
+            artifact_cell = choice(free_to_spawn_cells)
+            artifacts_info[artifact_cell] = CellType.Gold
+            self.gold_cells.append(artifact_cell)
+        self.game_board.board_info.update(artifacts_info)
 
     @admin_command_decorator
     def update_guards_number(self, number):
@@ -202,7 +202,7 @@ class LodeRunnerGameSession:
             player_object.pickup_gold()
         self.gold_cells.remove(cell)
         logger.debug("Gold cell %s has been picked up" % str(cell))
-        self.spawn_gold_cells()
+        self.spawn_gold_cells(1)
 
     def _process_drill(self, drill_action, player_object):
         logger.debug("Processing %s of %s" % (drill_action, vars(player_object)))
@@ -309,29 +309,6 @@ class LodeRunnerGameSession:
     def check_user_name(self, name):
         return name in [participant.name for _, participant in self.registry.items()]
 
-    def add_ai_objects(self, ai_number, ai_type):
-        current_ai_number = self.get_participants_number(ai_type)
-        for index in range(int(ai_number)):
-            guard_name = "%s%s" % (GUARD_NAME_PREFIX, str(current_ai_number + index))
-            self.register_participant(client_id=uuid1(), name=guard_name, participant_type=ai_type)
-
-    def get_participants_number(self, participant_type):
-        return len([el for el in self._participants if el.get_type() == participant_type])
-
-    def remove_ai_objects(self, ai_number, ai_type):
-        for index in range(int(ai_number)):
-            self.unregister_participant(choice([ai_object.get_id() for ai_object in self._participants
-                                                if ai_object.get_type() == ai_type]))
-
-    def spawn_artifacts(self, cell_type, number):
-        artifacts_info = {}
-        free_to_spawn_cells = self._get_free_to_spawn_cells()
-        for index in range(int(number)):
-            artifact_cell = choice(free_to_spawn_cells)
-            artifacts_info[artifact_cell] = cell_type
-            self.artifacts.append(artifact_cell)
-        self.game_board.board_info.update(artifacts_info)
-
     @admin_command_decorator
     def set_tick_time(self, tick_time):
         try:
@@ -351,14 +328,13 @@ class LodeRunnerGameSession:
         else:
             is_paused = self.is_paused
             self.stop()
-            self.blocks_number = blocks_number
             self.scenarios = {}
-            self.game_board = LodeRunnerGameBoard(get_generated_board(int(blocks_number)))
+            self.game_board = LodeRunnerGameBoard.from_blocks_number(int(blocks_number))
             free_cells = self._get_free_to_spawn_cells()
             for participant in self._participants:
                 cell = choice(free_cells)
                 participant.set_cell(cell)
-            self.artifacts = []
+            self.gold_cells = []
             self.spawn_gold_cells(GOLD_CELLS_NUMBER)
             self.broadcast(client_types=[SPECTATOR])
             self.is_paused = is_paused
@@ -368,7 +344,7 @@ class LodeRunnerGameSession:
         participants_cells = [participant_object.cell for participant_object in self._participants]
         participants_neighbour_cells = list(chain.from_iterable([get_cell_neighbours(cell, self.game_board.board_info)
                                                                  for cell in participants_cells]))
-        return list(set(empty_cells) - set(participants_cells + participants_neighbour_cells + self.artifacts))
+        return list(set(empty_cells) - set(participants_cells + participants_neighbour_cells + self.gold_cells))
 
     @property
     def _participants(self):
@@ -432,15 +408,6 @@ class LodeRunnerGameSession:
             if participant_object.get_name() == name:
                 return participant_object.get_id()
 
-    def get_cell_by_name(self, name):
-        participant_obj = self.registry[self.get_participant_id_by_name(name)]
-        return participant_obj.get_cell()
-
-    def get_participant_obj_by_name(self, name):
-        for participant_object in self._participants:
-            if participant_object.get_name() == name:
-                return participant_object
-
 
 def get_drill_vector(drill_action):
     if drill_action == Drill.DrillLeft:
@@ -466,12 +433,12 @@ def get_move_point_cell(cell, move):
 
 def get_move_changes(move):
     move_changes = {
-            None:       (0, 0),
-            Move.Right: (1, 0),
-            Move.Left: (-1, 0),
-            Move.Down: (0, 1),
-            Move.Up: (0, -1)
-        }
+        None: (0, 0),
+        Move.Right: (1, 0),
+        Move.Left: (-1, 0),
+        Move.Down: (0, 1),
+        Move.Up: (0, -1)
+    }
     return move_changes[move]
 
 

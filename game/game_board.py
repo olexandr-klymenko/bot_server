@@ -1,18 +1,60 @@
+from itertools import chain
+
 from copy import deepcopy
 from logging import getLogger
+from random import choice
 from typing import List
 
 from common.utils import PLAYER, CellType, get_board_info, CellGroups
 
 logger = getLogger()
 
+BOARD_BLOCK = [
+    #123456789
+    '     H=HH',  # 1
+    '=H---H H ',  # 2
+    ' H     H ',  # 3
+    ' H=##=HH ',  # 4
+    ' H    H  ',  # 5
+    '=HH===H==',  # 6
+    '  H---H=H',  # 7
+    '==H     H',  # 8
+    '  H==H==H',  # 9
+]
+
+BLOCKS_NUMBER = 3
+BLOCK_SIZE = len(BOARD_BLOCK)
+VERT_FLIP_BLOCK = BOARD_BLOCK[::-1]
+HORIZ_FLIP_BLOCK = [line[::1] for line in BOARD_BLOCK]
+VERT_HORIZ_FLIP_BLOCK = [line[::-1] for line in BOARD_BLOCK[::-1]]
+BLOCKS = [BOARD_BLOCK, VERT_FLIP_BLOCK, HORIZ_FLIP_BLOCK, VERT_HORIZ_FLIP_BLOCK]
+
+
+def get_generated_board(blocks_number: int) -> List[List]:
+    board_blocks = []
+    for vert_idx in range(blocks_number):
+        current_layer_blocks = [choice(BLOCKS) for _ in range(blocks_number)]
+        board_blocks.extend(_get_concatenated_blocks_layer(current_layer_blocks))
+    return board_blocks
+
+
+def _get_concatenated_blocks_layer(layer_blocks) -> List:
+    return [''.join(chain.from_iterable([list(block[line]) for block in layer_blocks])) for line in range(BLOCK_SIZE)]
+
 
 class LodeRunnerGameBoard:
+    blocks_number = BLOCKS_NUMBER
+
     def __init__(self, board_layers: List[List]):
         self.board_layers = board_layers
         self.size = len(board_layers)
         self.initial_board_info = get_board_info(board_layers)
         self.board_info = deepcopy(self.initial_board_info)
+
+    @classmethod
+    def from_blocks_number(cls, blocks_number: int = BLOCKS_NUMBER):
+        cls.blocks_number = blocks_number
+        return cls(get_generated_board(blocks_number))
 
     def get_board_layers(self, cell, direction):
         board_list = []

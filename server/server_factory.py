@@ -67,7 +67,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
             'guards': len(self.guard_clients),
             'players': [client.client_info['name'] for client in self.player_clients],
             'started': not self.game_session.is_paused,
-            'size': self.game_session.blocks_number
+            'size': self.game_session.game_board.blocks_number
         }
 
     @property
