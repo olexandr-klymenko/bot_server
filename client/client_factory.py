@@ -9,3 +9,4 @@ class GameClientFactory(WebSocketClientFactory):
         self.client_type = client_type
         super().__init__(f'{url}?client_type={client_type}&name={name}')
         self.protocol = LodeRunnerClientProtocol
+        self.client = None

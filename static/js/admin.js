@@ -1,7 +1,9 @@
 const GAME_PORT = '9000';
+const GUARD_MANAGER_PORT = '9090';
 const HOSTNAME = window.location.hostname;
-const URL = "ws://" + HOSTNAME + ":" + GAME_PORT;
-const ADMIN_SOCKET_URL = URL + "?client_type=Admin";
+const GAME_URL = "ws://" + HOSTNAME + ":" + GAME_PORT;
+const GUARD_MANAGER_URL = "ws://" + HOSTNAME + ":" + GUARD_MANAGER_PORT;
+const ADMIN_SOCKET_URL = GAME_URL + "?client_type=Admin";
 const ADMIN_URL = '/admin';
 const STARTED = 'started';
 const SIZE = 'size';
@@ -16,6 +18,7 @@ const ROOT_NODE_ID = 'rootNode';
 const BOARD_BLOCKS_NUMBERS = [1, 2, 3, 4, 5];
 
 let adminSocket;
+let guardManagerSocket;
 let reconnectionRetryCount;
 let playersList;
 let startStopButton;
@@ -50,6 +53,7 @@ function main() {
     rootNode.appendChild(boardSizeSelect);
     rootNode.appendChild(guardsControlBlock);
     adminSocket = getAdminSocket();
+    guardManagerSocket = getGuardManagerSocket();
 }
 
 function getAdminSocket() {
@@ -74,7 +78,7 @@ function getAdminSocket() {
     };
     adminSocket.onopen = () => {
         reconnectionRetryCount = DEFAULT_RECONNECTION_RETRY_COUNT;
-        console.log('Connection has been established');
+        console.log('Connection with game server has been established');
         $('#' + ROOT_NODE_ID + ' *').attr('disabled', false);
     };
     return adminSocket;
@@ -155,13 +159,9 @@ function getGuardsControlBlock() {
     let guardsControlBlock = document.createElement('div');
     updateGuardsNumberButton = document.createElement('button');
     updateGuardsNumberButton.innerText = 'Update guards number';
+
     updateGuardsNumberButton.onclick = () => {
-        $.post(ADMIN_URL, {
-            "command": "update_guards_number",
-            "args": guardsNumberButton.innerText
-        }, () => {
-            console.log('Guards number has been updated');
-        })
+        guardManagerSocket.send(guardsNumberButton.innerText)
     };
     let decreaseGuardsNumberButton = document.createElement('button');
     decreaseGuardsNumberButton.innerText = '-';
@@ -185,7 +185,19 @@ function getGuardsControlBlock() {
     return guardsControlBlock
 }
 
+function getGuardManagerSocket() {
+    let guardManagerSocket = new WebSocket(GUARD_MANAGER_URL);
+    guardManagerSocket.onclose = () => {
+        console.log('Connection with guard manager server has been dropped');
+    };
+    guardManagerSocket.onopen = () => {
+        console.log('Connection with guard manager has been established');
+    };
+    return guardManagerSocket;
+}
+
 main();
 
-// TODO: add the rest of controls (add/remove guard, add/remove gold, resize/regenerate map, etc)
+// TODO: add the rest of controls (add/remove gold)
 // TODO: set session time
+// TODO: Disconnect guard manager handle

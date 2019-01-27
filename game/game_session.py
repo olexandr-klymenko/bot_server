@@ -34,7 +34,6 @@ def admin_command_decorator(func):
 
 class LodeRunnerGameSession:
     clients_info = None
-    guard_manager = None
 
     def __init__(self, loop, game_board: LodeRunnerGameBoard):
         self.loop = loop
@@ -85,10 +84,6 @@ class LodeRunnerGameSession:
             artifacts_info[artifact_cell] = CellType.Gold
             self.gold_cells.append(artifact_cell)
         self.game_board.board_info.update(artifacts_info)
-
-    @admin_command_decorator
-    def update_guards_number(self, number):
-        self.guard_manager.sendMessage(f'{number}'.encode())
 
     def register_participant(self, client_id, name, participant_type):
         cell = choice(self._get_free_to_spawn_cells())

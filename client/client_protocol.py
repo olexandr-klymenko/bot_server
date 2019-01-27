@@ -25,7 +25,8 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
         return self.factory.params['client_type'][0]
 
     def onConnect(self, response):
-        logger.info("'{user}' has been connected to server {server}".format(user=self.name, server=response.peer))
+        logger.info(f"'{self.name}' has been connected to server {response.peer}")
+        self.factory.client = self
         if self.client_type == PLAYER:
             self.target_cell_types = [CellType.Gold]
         elif self.client_type == GUARD:
@@ -47,14 +48,14 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
                                                                                self.target_cell_types
                                                                                )
             path_finder = self.path_finder_cls(board_info)
-            logger.debug("My cell: %s" % str(path_finder.my_cell))
-            logger.debug("Gold cells: %s" % path_finder.target_cells)
+            logger.debug(f"My cell: {str(path_finder.my_cell)}")
+            logger.debug(f"Gold cells: {path_finder.target_cells}")
             action = path_finder.get_routed_move_action()
             self.sendMessage(bytes(action.encode()))
             logger.info(f"'{self.name}' has sent message: '{action}'")
 
     def onClose(self, wasClean, code, reason):
-        logger.info("WebSocket connection of '{user}' closed: {reason}".format(user=self.name, reason=reason))
+        logger.info(f"WebSocket connection of '{self.name}' closed: {reason}")
 
 
 def get_coerced_board_layers(board_layers):

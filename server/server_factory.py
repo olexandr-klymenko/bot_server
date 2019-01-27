@@ -5,7 +5,7 @@ from functools import wraps
 from logging import getLogger
 from uuid import uuid1
 
-from common.utils import PLAYER, GUARD, SPECTATOR, ADMIN, GUARD_MANAGER
+from common.utils import PLAYER, GUARD, SPECTATOR, ADMIN
 from game.game_session import LodeRunnerGameSession
 
 logger = getLogger()
@@ -29,7 +29,6 @@ class BroadcastServerFactory(WebSocketServerFactory):
         super().__init__(url)
         self.clients_info = {}
         self.admin_client = None
-        self.guard_manager_client = None
         logger.info('Lode Runner game server has been initialized')
 
     @property
@@ -46,9 +45,6 @@ class BroadcastServerFactory(WebSocketServerFactory):
     def register_client(self, client):
         if client.client_info['client_type'] == ADMIN:
             self._register_admin_client(client)
-        elif client.client_info['client_type'] == GUARD_MANAGER:
-            logger.info(f"Registered Guard Manager client {client.peer}")
-            self.game_session.guard_manager = client
         else:
             self._register_non_admin_client(client)
 
@@ -114,11 +110,6 @@ class BroadcastServerFactory(WebSocketServerFactory):
 
                 if self.admin_client:
                     self.admin_client.sendMessage(json.dumps(self.game_info).encode())
-        # else:
-        #     if client is self.admin_client:
-        #         logger.info(f"Unregistered admin client '{client.peer}'")
-        #     elif client is self.guard_manager_client:
-        #         logger.info(f"Unregistered guard manager client '{client.peer}'")
 
     @factory_action_decorator
     def process_message(self, client, message):
@@ -128,15 +119,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
                             name=client.client_info['name'],
                             id=self.game_session.get_participant_id_by_name(client.client_info['name'])))
 
-        if client.client_info['client_type'] == GUARD_MANAGER:
-            pass
-            self._process_message_from_guard_manager()
-        else:
-            self.game_session.process_action(action=message, player_id=self.get_client_id(client))
+        self.game_session.process_action(action=message, player_id=self.get_client_id(client))
 
     def get_client_id(self, client):
         return dict(zip(self.clients_info.values(), self.clients_info.keys()))[client]
-
-    def _process_message_from_guard_manager(self):
-        for guard in self.guard_clients:
-            guard.sendClose()
