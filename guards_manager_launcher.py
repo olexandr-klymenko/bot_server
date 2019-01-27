@@ -2,7 +2,7 @@ import asyncio
 
 from argparse import ArgumentParser
 
-from server.guard_manager import GuardManagerServerFactory, GuardManagerServerProtocol
+from server.guard_manager_server import GuardManagerServerFactory, GuardManagerServerProtocol
 from utils.configure_logging import setup_logging
 
 GUARD_MANAGER_SERVER_WEB_SOCKET_URL = "ws://0.0.0.0"

@@ -4,8 +4,7 @@ from argparse import ArgumentParser
 
 from game.game_board import LodeRunnerGameBoard
 from game.game_session import LodeRunnerGameSession
-from server.server_factory import BroadcastServerFactory
-from server.server_protocol import BroadcastServerProtocol
+from server.game_server import BroadcastServerFactory, BroadcastServerProtocol
 from server.web_server import WebServer
 from utils.configure_logging import setup_logging
 

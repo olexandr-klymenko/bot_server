@@ -1,7 +1,7 @@
 import asyncio
 import sys
 
-from client.client_factory import GameClientFactory
+from client.game_client import GameClientFactory
 from common.utils import PLAYER
 from utils.configure_logging import setup_logging
 

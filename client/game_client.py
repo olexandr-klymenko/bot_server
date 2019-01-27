@@ -1,6 +1,7 @@
 from itertools import chain
 
 import json
+from autobahn.asyncio import WebSocketClientFactory
 from autobahn.asyncio.websocket import WebSocketClientProtocol
 from logging import getLogger
 from random import choice
@@ -172,3 +173,12 @@ def is_pass(start_cell, end_cell, board_info):
         return False
 
     return True
+
+
+class GameClientFactory(WebSocketClientFactory):
+    def __init__(self, url, client_type, name):
+        self.name = name
+        self.client_type = client_type
+        super().__init__(f'{url}?client_type={client_type}&name={name}')
+        self.protocol = LodeRunnerClientProtocol
+        self.client = None

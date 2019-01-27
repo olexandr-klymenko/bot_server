@@ -7,7 +7,7 @@ from autobahn.asyncio.websocket import WebSocketServerProtocol
 from logging import getLogger
 from uuid import uuid4
 
-from client.client_factory import GameClientFactory
+from client.game_client import GameClientFactory
 from common.utils import GUARD
 from utils.configure_logging import setup_logging
 
