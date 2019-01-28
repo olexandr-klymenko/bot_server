@@ -78,6 +78,11 @@ class BroadcastServerFactory(WebSocketServerFactory):
 
     def _register_non_admin_client(self, client):
         client_id = uuid1()
+        if client.client_info['client_type'] == GUARD_MANAGER:
+            logger.info(f"Registered Guard Manager client {client.peer}, id: '{client_id}'")
+            self.game_session.guard_manager = client
+            return
+
         self.clients_info.update({client_id: client})
         if self.game_session.is_player_name_in_registry(client.client_info['name']):
             logger.error("Client with id % is already registered")
@@ -86,11 +91,6 @@ class BroadcastServerFactory(WebSocketServerFactory):
         if client.client_info['client_type'] == SPECTATOR:
             logger.info(f"Registered Spectator client {client.peer}, id: '{client_id}'")
             client.sendMessage(json.dumps(self.game_session.get_session_info(client_id)).encode())
-            return
-
-        if client.client_info['client_type'] == GUARD_MANAGER:
-            logger.info(f"Registered Spectator client {client.peer}, id: '{client_id}'")
-            self.game_session.guard_manager = client
             return
 
         if client.client_info['client_type'] in [PLAYER, GUARD]:

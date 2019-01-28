@@ -1,3 +1,4 @@
+import asyncio
 from itertools import chain
 
 import json
@@ -57,6 +58,10 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
 
     def onClose(self, wasClean, code, reason):
         logger.info(f"WebSocket connection of '{self.name}' closed: {reason}")
+
+    def connection_lost(self, exc):
+        logger.info(f"WebSocket connection lost")
+        asyncio.get_event_loop().stop()
 
 
 def get_coerced_board_layers(board_layers):

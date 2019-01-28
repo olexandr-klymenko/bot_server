@@ -23,7 +23,14 @@ def main():
 
 def run_loop(loop):
     factory = GameClientFactory(url=f'ws://127.0.0.1:9000', client_type=PLAYER, name=sys.argv[1])
-    loop.run_until_complete(loop.create_connection(factory, '127.0.0.1', 9000))
+
+    while True:
+        try:
+            loop.run_until_complete(loop.create_connection(factory, '127.0.0.1', 9000))
+            loop.run_forever()
+        except ConnectionRefusedError:
+            pass
+            loop.run_until_complete(asyncio.sleep(1))
 
 
 if __name__ == '__main__':

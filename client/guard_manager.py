@@ -1,17 +1,17 @@
 import asyncio
-import gc
+import sys
 
 import json
+import subprocess
 from autobahn.asyncio.websocket import WebSocketClientFactory
 from autobahn.asyncio.websocket import WebSocketClientProtocol
 from logging import getLogger
 from uuid import uuid4
 
-from client.game_client import GameClientFactory
-from common.utils import GUARD_MANAGER, GUARD
-from utils.configure_logging import setup_logging
+from common.utils import GUARD_MANAGER
 
 logger = getLogger()
+logger.level = 'DEBUG'
 
 GAME_SERVER_WEB_SOCKET_URL = "ws://0.0.0.0"
 GAME_SERVER_WEB_SOCKET_PORT = 9000
@@ -24,8 +24,7 @@ class GuardManagerClientFactory(WebSocketClientFactory):
 
 
 class GuardManagerClientProtocol(WebSocketClientProtocol):
-    guards_tasks = []
-    guard_objects = []
+    guards_number = 0
 
     def onConnect(self, response):
         logger.info(f"Connected to WebSocket: {response.peer}")
@@ -33,31 +32,34 @@ class GuardManagerClientProtocol(WebSocketClientProtocol):
     def onMessage(self, payload, isBinary):
         if not isBinary:
             requested_guards_number = json.loads(payload)
-            if requested_guards_number != len(self.guards_tasks):
-                logger.info(f'Destroying {len(self.guards_tasks)} guards ...')
-                for factory in self.guard_objects:
-                    factory.client.sendClose()
-                self.guards_tasks = []
-                self.guard_objects = []
-                gc.collect()
+            if requested_guards_number != self.guards_number:
+                if self.guards_number:
+                    logger.info(f'Destroying {self.guards_number} guards ...')
+
                 if requested_guards_number:
                     logger.info(f'Spawning {requested_guards_number} guards ...')
-                    for idx in range(requested_guards_number):
-                        self.guards_tasks.append(self.run_guard())
-                    asyncio.gather(*self.guards_tasks)
+                    for _ in range(requested_guards_number):
+                        try:
+                            completed = subprocess.run(['python', 'guard_runner.py'],
+                                           shell=True,
+                                           stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE
+                                           )
+                        except Exception as err:
+                            print('ERROR:', err)
+                        finally:
+                            print('returncode:', completed.returncode)
+                            print('Have {} bytes in stdout: {!r}'.format(
+                                len(completed.stdout),
+                                completed.stdout.decode('utf-8'))
+                            )
+                            print('Have {} bytes in stderr: {!r}'.format(
+                                len(completed.stderr),
+                                completed.stderr.decode('utf-8'))
+                            )
             else:
                 logger.info('Guards number remains unchanged')
 
-    def onClose(self, wasClean, code, reason):
-        logger.info(f"WebSocket connection closed: {reason}")
-
-    def run_guard(self):
-        loop = asyncio.get_event_loop()
-        setup_logging('INFO')
-        guard_factory = GameClientFactory(
-            url=f'{GAME_SERVER_WEB_SOCKET_URL}:{GAME_SERVER_WEB_SOCKET_PORT}',
-            client_type=GUARD,
-            name=uuid4()
-        )
-        self.guard_objects.append(guard_factory)
-        return loop.create_connection(guard_factory, '127.0.0.1', GAME_SERVER_WEB_SOCKET_PORT)
+    def connection_lost(self, exc):
+        logger.info(f"WebSocket connection lost")
+        asyncio.get_event_loop().stop()
