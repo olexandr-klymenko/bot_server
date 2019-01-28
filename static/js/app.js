@@ -219,3 +219,4 @@ function keyboardManager(game_board_socket) {
 websocketGame();
 
 // TODO: fix empty cell of players
+// TODO: reconnect after server restart

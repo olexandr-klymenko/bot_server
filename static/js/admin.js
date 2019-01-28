@@ -8,6 +8,7 @@ const ADMIN_URL = '/admin';
 const STARTED = 'started';
 const SIZE = 'size';
 const GUARDS = 'guards';
+const GOLD = 'gold';
 const DEFAULT_RECONNECTION_RETRY_COUNT = 10;
 const RECONNECTION_RETRY_TIMEOUT = 1000;
 const PLAYERS_LIST_ID = 'players';
@@ -27,6 +28,9 @@ let boardSizeSelect;
 let guardsControlBlock;
 let guardsNumberButton;
 let updateGuardsNumberButton;
+let goldControlBlock;
+let goldNumberButton;
+let updateGoldNumberButton;
 let rootNode;
 
 
@@ -45,6 +49,7 @@ function main() {
     boardSizeSelect = getBoardSizeSelect();
 
     guardsControlBlock = getGuardsControlBlock();
+    goldControlBlock = getGoldControlBlock();
 
     rootNode.appendChild(playersList);
     rootNode.appendChild(startStopButton);
@@ -52,6 +57,8 @@ function main() {
     rootNode.appendChild(regenerateBoardButton);
     rootNode.appendChild(boardSizeSelect);
     rootNode.appendChild(guardsControlBlock);
+    rootNode.appendChild(goldControlBlock);
+
     adminSocket = getAdminSocket();
     guardManagerSocket = getGuardManagerSocket();
 }
@@ -64,7 +71,8 @@ function getAdminSocket() {
         showPlayers(sessionInfo[PLAYERS_LIST_ID]);
         showStartStopButton(sessionInfo[STARTED]);
         document.getElementById(BOARD_SIZE_SELECT_ID).value = sessionInfo[SIZE];
-        guardsNumberButton.innerText = sessionInfo[GUARDS]
+        guardsNumberButton.innerText = sessionInfo[GUARDS];
+        goldNumberButton.innerText = sessionInfo[GOLD]
     };
     adminSocket.onclose = () => {
         console.log('Connection with game server has been dropped');
@@ -185,6 +193,41 @@ function getGuardsControlBlock() {
     return guardsControlBlock
 }
 
+function getGoldControlBlock() {
+    let goldControlBlock = document.createElement('div');
+    updateGoldNumberButton = document.createElement('button');
+    updateGoldNumberButton.innerText = 'Update gold cells number';
+
+    updateGoldNumberButton.onclick = () => {
+        $.post(ADMIN_URL, {
+            "command": "spawn_gold_cells",
+            "args": goldNumberButton.innerText
+        }, () => {
+            console.log('Gold cells have been re spawned');
+        })
+    };
+    let decreaseGoldNumberButton = document.createElement('button');
+    decreaseGoldNumberButton.innerText = '-';
+    decreaseGoldNumberButton.onclick = () => {
+        if (goldNumberButton.innerText !== '0') {
+            goldNumberButton.innerText = parseInt(goldNumberButton.innerText) - 1;
+        }
+    };
+
+    goldNumberButton = document.createElement('button');
+    let increaseGoldNumberButton = document.createElement('button');
+    increaseGoldNumberButton.innerText = '+';
+    increaseGoldNumberButton.onclick = () => {
+        goldNumberButton.innerText = parseInt(goldNumberButton.innerText) + 1;
+    };
+
+    goldControlBlock.appendChild(updateGoldNumberButton);
+    goldControlBlock.appendChild(decreaseGoldNumberButton);
+    goldControlBlock.appendChild(goldNumberButton);
+    goldControlBlock.appendChild(increaseGoldNumberButton);
+    return goldControlBlock
+}
+
 function getGuardManagerSocket() {
     let guardManagerSocket = new WebSocket(GUARD_MANAGER_URL);
     guardManagerSocket.onclose = () => {
@@ -198,6 +241,6 @@ function getGuardManagerSocket() {
 
 main();
 
-// TODO: add the rest of controls (add/remove gold)
 // TODO: set session time
 // TODO: Disconnect guard manager handle
+// TODO: add images to buttons

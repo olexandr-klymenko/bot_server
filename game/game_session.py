@@ -3,7 +3,7 @@ import json
 from copy import deepcopy
 from functools import wraps
 from logging import getLogger
-from random import choice
+from random import choice, choices
 
 from common.utils import PLAYER, GUARD, SPECTATOR, CellType, get_cell_neighbours, Move, get_lower_cell, Drill
 from game.game_board import LodeRunnerGameBoard
@@ -48,9 +48,10 @@ class LodeRunnerGameSession:
 
     def broadcast(self, client_types=(SPECTATOR, PLAYER, GUARD)):
         logger.debug("Broadcasting data for websocket clients ...")
-        for client_id, client in self.clients_info.items():
-            if client.client_info['client_type'] in client_types:
-                client.sendMessage(json.dumps(self.get_session_info(client_id)).encode())
+        if self.clients_info:
+            for client_id, client in self.clients_info.items():
+                if client.client_info['client_type'] in client_types:
+                    client.sendMessage(json.dumps(self.get_session_info(client_id)).encode())
 
     @admin_command_decorator
     def start(self):
@@ -76,14 +77,15 @@ class LodeRunnerGameSession:
         self.loop.call_later(self.tick_time, self._tick)
 
     @admin_command_decorator
-    def spawn_gold_cells(self, number=GOLD_CELLS_NUMBER):
-        artifacts_info = {}
-        free_to_spawn_cells = self._get_free_to_spawn_cells()
-        for index in range(int(number)):
-            artifact_cell = choice(free_to_spawn_cells)
-            artifacts_info[artifact_cell] = CellType.Gold
-            self.gold_cells.append(artifact_cell)
-        self.game_board.board_info.update(artifacts_info)
+    def spawn_gold_cells(self, number: int = GOLD_CELLS_NUMBER):
+        number = int(number)
+        if number != len(self.gold_cells):
+            if self.gold_cells:
+                self.game_board.board_info.update({cell: CellType.Empty for cell in self.gold_cells})
+
+            self.gold_cells = choices(self._get_free_to_spawn_cells(), k=number)
+            self.game_board.board_info.update({cell: CellType.Gold for cell in self.gold_cells})
+            self.broadcast(client_types=(SPECTATOR,))
 
     def register_participant(self, client_id, name, participant_type):
         cell = choice(self._get_free_to_spawn_cells())
@@ -330,7 +332,7 @@ class LodeRunnerGameSession:
                 cell = choice(free_cells)
                 participant.set_cell(cell)
             self.gold_cells = []
-            self.spawn_gold_cells(GOLD_CELLS_NUMBER)
+            self.spawn_gold_cells(len(self.gold_cells))
             self.broadcast(client_types=[SPECTATOR])
             self.is_paused = is_paused
 

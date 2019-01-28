@@ -62,6 +62,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
     def game_info(self):
         return {
             'guards': len(self.guard_clients),
+            'gold': len(self.game_session.gold_cells),
             'players': [client.client_info['name'] for client in self.player_clients],
             'started': not self.game_session.is_paused,
             'size': self.game_session.game_board.blocks_number
