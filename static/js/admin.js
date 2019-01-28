@@ -17,6 +17,7 @@ const REGENERATE_BOARD_BUTTON_ID = 'regenerateBoardButton';
 const BOARD_SIZE_SELECT_ID = 'boardSizeSelect';
 const ROOT_NODE_ID = 'rootNode';
 const BOARD_BLOCKS_NUMBERS = [1, 2, 3, 4, 5];
+const IMAGES_ROOT = "static/images/";
 
 let adminSocket;
 let guardManagerSocket;
@@ -141,7 +142,6 @@ function getRegenerateBoardButton() {
     let regenerateBoardButton = document.createElement('button');
     regenerateBoardButton.id = REGENERATE_BOARD_BUTTON_ID;
     regenerateBoardButton.innerText = 'Regenerate Game Board';
-    regenerateBoardButton.placeholder = 'Enter integer greater that zero';
     regenerateBoardButton.onclick = () => {
         $.post(ADMIN_URL, {
             "command": "regenerate_game_board",
@@ -197,7 +197,6 @@ function getGoldControlBlock() {
     let goldControlBlock = document.createElement('div');
     updateGoldNumberButton = document.createElement('button');
     updateGoldNumberButton.innerText = 'Update gold cells number';
-
     updateGoldNumberButton.onclick = () => {
         $.post(ADMIN_URL, {
             "command": "spawn_gold_cells",
@@ -237,6 +236,10 @@ function getGuardManagerSocket() {
         console.log('Connection with guard manager has been established');
     };
     return guardManagerSocket;
+}
+
+function getButtonWithImage(text, imageName) {
+    return text + ' <img src=' + IMAGES_ROOT + imageName + '/>'
 }
 
 main();

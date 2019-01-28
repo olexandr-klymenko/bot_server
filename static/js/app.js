@@ -52,10 +52,14 @@ const cellImagesInfo = {
 
     '#': 'unbreakable.png'
 };
-
+const DEFAULT_RECONNECTION_RETRY_COUNT = 10;
+const RECONNECTION_RETRY_TIMEOUT = 1000;
 const cells_info = getCellsInfo();
+
 let boardSize;
 let canvasCtx;
+let reconnectionRetryCount;
+let boardMessage;
 
 
 function getCellsInfo() {
@@ -91,7 +95,10 @@ function getUrlValue(varSearch) {
 }
 
 function websocketGame() {
-    canvasCtx = getCanvasContext();
+    document.body.onresize = () => {
+        showGameBoard();
+    };
+    setCanvasContext();
     setTimeout(() => {
         let gameBoardSocket = gameBoardSocketManager();
         keyboardManager(gameBoardSocket)
@@ -106,37 +113,53 @@ function gameBoardSocketManager() {
         if (!boardSize) {
             boardSize = sessionInfo[SIZE]
         }
+        boardMessage = sessionInfo[BOARD];
         handleBoardSizeChange(sessionInfo[SIZE]);
         showGameBoard(sessionInfo[BOARD]);
         showScores(sessionInfo);
         showPlayersNames(sessionInfo[PLAYERS][NAMES]);
     };
+
+    gameBoardSocket.onclose = () => {
+        console.log('Connection with game server has been dropped');
+        reconnectionRetryCount--;
+        if (reconnectionRetryCount > 0) {
+            setTimeout(gameBoardSocketManager, RECONNECTION_RETRY_TIMEOUT)
+        } else {
+            console.log("Couldn't establish connection. Giving up");
+        }
+    };
+
+    gameBoardSocket.onopen = () => {
+        reconnectionRetryCount = DEFAULT_RECONNECTION_RETRY_COUNT;
+        console.log('Connection with game server has been established');
+    };
     return gameBoardSocket
 }
 
-function getCanvasContext() {
+function setCanvasContext() {
     if (canvasCtx) {
         let canvas = document.getElementById('canvas');
         canvas.parentNode.removeChild(canvas);
     }
     let canvas = document.createElement("canvas");
     canvas.id = 'canvas';
-    let ctx = canvas.getContext("2d");
+    canvasCtx = canvas.getContext("2d");
     canvas.width = $(window).width() - cellSize;
     canvas.height = $(window).height() - cellSize;
     document.body.appendChild(canvas);
-    return ctx
 }
 
 function handleBoardSizeChange(size) {
     if (boardSize && size !== boardSize) {
         console.log('Game board size has been changed to ' + size.toString());
         boardSize = size;
-        canvasCtx = getCanvasContext()
+        setCanvasContext()
     }
 }
 
-function showGameBoard(boardMessage) {
+function showGameBoard() {
+    setCanvasContext();
     for (let y in boardMessage) {
         for (let x in boardMessage[y]) {
             canvasCtx.drawImage(
@@ -219,4 +242,4 @@ function keyboardManager(game_board_socket) {
 websocketGame();
 
 // TODO: fix empty cell of players
-// TODO: reconnect after server restart
+// TODO: fix guard cell as hero
