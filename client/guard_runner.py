@@ -29,6 +29,8 @@ def main():
             loop.run_until_complete(asyncio.sleep(1))
         except KeyboardInterrupt:
             loop.close()
+        except Exception as err:
+            print(str(err))
 
 
 if __name__ == '__main__':

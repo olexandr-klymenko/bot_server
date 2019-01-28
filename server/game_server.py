@@ -6,7 +6,7 @@ from functools import wraps
 from logging import getLogger
 from uuid import uuid1
 
-from common.utils import PLAYER, GUARD, SPECTATOR, ADMIN, GUARD_MANAGER
+from common.utils import PLAYER, GUARD, SPECTATOR, ADMIN
 from game.game_session import LodeRunnerGameSession
 
 logger = getLogger()
@@ -78,11 +78,6 @@ class BroadcastServerFactory(WebSocketServerFactory):
 
     def _register_non_admin_client(self, client):
         client_id = uuid1()
-        if client.client_info['client_type'] == GUARD_MANAGER:
-            logger.info(f"Registered Guard Manager client {client.peer}, id: '{client_id}'")
-            self.game_session.guard_manager = client
-            return
-
         self.clients_info.update({client_id: client})
         if self.game_session.is_player_name_in_registry(client.client_info['name']):
             logger.error("Client with id % is already registered")

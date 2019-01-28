@@ -2,7 +2,6 @@ PLAYER = 'Player'
 GUARD = 'Guard'
 SPECTATOR = 'Spectator'
 ADMIN = 'Admin'
-GUARD_MANAGER = 'GuardManager'
 
 
 def get_board_info(board_layers):

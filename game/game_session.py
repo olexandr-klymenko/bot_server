@@ -1,5 +1,9 @@
+import sys
 from itertools import chain
+
 import json
+import pathlib
+import subprocess
 from copy import deepcopy
 from functools import wraps
 from logging import getLogger
@@ -34,7 +38,6 @@ def admin_command_decorator(func):
 
 class LodeRunnerGameSession:
     clients_info = None
-    guard_manager = None
 
     def __init__(self, loop, game_board: LodeRunnerGameBoard):
         self.loop = loop
@@ -89,7 +92,11 @@ class LodeRunnerGameSession:
 
     @admin_command_decorator
     def update_guards_number(self, number):
-        self.guard_manager.sendMessage(f'{number}'.encode())
+        number = int(number)
+        for client in self.guard_clients:
+            client.sendMessage(json.dumps({'exit': True}).encode())
+        for _ in range(number):
+            subprocess.Popen([sys.executable, pathlib.Path('client', 'guard_runner.py')])
 
     def spawn_gold_cell(self):
         cell = choice(self._get_free_to_spawn_cells())
@@ -272,6 +279,10 @@ class LodeRunnerGameSession:
     @property
     def players_cells(self):
         return {player_object.name: player_object.cell for player_object in self.players}
+
+    @property
+    def guard_clients(self):
+        return [client for _, client in self.clients_info.items() if client.client_info['client_type'] == GUARD]
 
     @property
     def gold_cells(self):

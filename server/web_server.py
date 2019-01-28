@@ -1,6 +1,7 @@
 from logging import getLogger
 from os import getcwd
 from os.path import join
+from traceback import format_exc
 
 import aiohttp_jinja2
 import jinja2
@@ -55,7 +56,7 @@ class WebServer(Application):
             result = self.game_session.run_admin_command(func_name, func_args)
             return Response(text=str(result))
         except Exception as err:
-            logger.error(str(err))
+            logger.error(str(format_exc()))
             return Response(text=str(err), status=500)
 
     @staticmethod

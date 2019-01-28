@@ -38,7 +38,11 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
 
     def onMessage(self, payload, isBinary):
         if not isBinary:
-            board_layers = json.loads(payload.decode())['board']
+            message = json.loads(payload.decode())
+            if 'exit' in message:
+                raise SystemExit
+
+            board_layers = message['board']
             board_info = get_board_info(board_layers)
 
             self.joints_info = self.joints_info or get_joints_info(
