@@ -6,7 +6,7 @@ from functools import wraps
 from logging import getLogger
 from uuid import uuid1
 
-from common.utils import PLAYER, GUARD, SPECTATOR, ADMIN
+from common.utils import PLAYER, GUARD, SPECTATOR, ADMIN, GUARD_MANAGER
 from game.game_session import LodeRunnerGameSession
 
 logger = getLogger()
@@ -86,6 +86,11 @@ class BroadcastServerFactory(WebSocketServerFactory):
         if client.client_info['client_type'] == SPECTATOR:
             logger.info(f"Registered Spectator client {client.peer}, id: '{client_id}'")
             client.sendMessage(json.dumps(self.game_session.get_session_info(client_id)).encode())
+            return
+
+        if client.client_info['client_type'] == GUARD_MANAGER:
+            logger.info(f"Registered Spectator client {client.peer}, id: '{client_id}'")
+            self.game_session.guard_manager = client
             return
 
         if client.client_info['client_type'] in [PLAYER, GUARD]:

@@ -12,7 +12,7 @@ from game.game_participants import get_participant
 logger = getLogger()
 
 GOLD_CELLS_NUMBER = 30
-TICK_TIME = .1
+TICK_TIME = .5
 GUARD_NAME_PREFIX = "AI_"
 DRILL_SCENARIO = [CellType.Drill, CellType.Empty, CellType.Empty, CellType.Empty,
                   CellType.Empty, CellType.Empty, CellType.PitFill4, CellType.PitFill3,
@@ -34,6 +34,7 @@ def admin_command_decorator(func):
 
 class LodeRunnerGameSession:
     clients_info = None
+    guard_manager = None
 
     def __init__(self, loop, game_board: LodeRunnerGameBoard):
         self.loop = loop
@@ -85,6 +86,10 @@ class LodeRunnerGameSession:
             gold_cells = choices(self._get_free_to_spawn_cells(), k=number)
             self.game_board.board_info.update({cell: CellType.Gold for cell in gold_cells})
             self.broadcast(client_types=(SPECTATOR,))
+
+    @admin_command_decorator
+    def update_guards_number(self, number):
+        self.guard_manager.sendMessage(f'{number}'.encode())
 
     def spawn_gold_cell(self):
         cell = choice(self._get_free_to_spawn_cells())

@@ -2,13 +2,13 @@ import asyncio
 import gc
 
 import json
-from autobahn.asyncio.websocket import WebSocketServerFactory
-from autobahn.asyncio.websocket import WebSocketServerProtocol
+from autobahn.asyncio.websocket import WebSocketClientFactory
+from autobahn.asyncio.websocket import WebSocketClientProtocol
 from logging import getLogger
 from uuid import uuid4
 
 from client.game_client import GameClientFactory
-from common.utils import GUARD
+from common.utils import GUARD_MANAGER, GUARD
 from utils.configure_logging import setup_logging
 
 logger = getLogger()
@@ -17,15 +17,18 @@ GAME_SERVER_WEB_SOCKET_URL = "ws://0.0.0.0"
 GAME_SERVER_WEB_SOCKET_PORT = 9000
 
 
-class GuardManagerServerFactory(WebSocketServerFactory):
+class GuardManagerClientFactory(WebSocketClientFactory):
     def __init__(self, url):
-        super().__init__(url)
-        logger.info('Lode Runner guard manager server has been initialized')
+        super().__init__(f'{url}?client_type={GUARD_MANAGER}&name={uuid4()}')
+        self.protocol = GuardManagerClientProtocol
 
 
-class GuardManagerServerProtocol(WebSocketServerProtocol):
+class GuardManagerClientProtocol(WebSocketClientProtocol):
     guards_tasks = []
     guard_objects = []
+
+    def onConnect(self, response):
+        logger.info(f"Connected to WebSocket: {response.peer}")
 
     def onMessage(self, payload, isBinary):
         if not isBinary:
@@ -44,6 +47,9 @@ class GuardManagerServerProtocol(WebSocketServerProtocol):
                     asyncio.gather(*self.guards_tasks)
             else:
                 logger.info('Guards number remains unchanged')
+
+    def onClose(self, wasClean, code, reason):
+        logger.info(f"WebSocket connection closed: {reason}")
 
     def run_guard(self):
         loop = asyncio.get_event_loop()

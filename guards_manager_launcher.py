@@ -1,46 +1,19 @@
 import asyncio
 
-from argparse import ArgumentParser
 
-from server.guard_manager_server import GuardManagerServerFactory, GuardManagerServerProtocol
+from client.guard_manager import GuardManagerClientFactory
 from utils.configure_logging import setup_logging
 
-GUARD_MANAGER_SERVER_WEB_SOCKET_URL = "ws://0.0.0.0"
-GUARD_MANAGER_SERVER_WEB_SOCKET_PORT = 9090
-DEBUG = False
-
-
-def main():
-    cmd_args = get_cmd_args()
-    setup_logging(cmd_args.log_level)
-
+if __name__ == '__main__':
     loop = asyncio.get_event_loop()
+    setup_logging('INFO')
 
-    factory = GuardManagerServerFactory(
-        url=f'{GUARD_MANAGER_SERVER_WEB_SOCKET_URL}:{GUARD_MANAGER_SERVER_WEB_SOCKET_PORT}')
-
-    factory.protocol = GuardManagerServerProtocol
-
-    guard_manager_ws_server = loop.run_until_complete(
-        loop.create_server(factory, '0.0.0.0', cmd_args.port)
-    )
+    factory = GuardManagerClientFactory(url=f'ws://127.0.0.1:9000')
+    loop.run_until_complete(loop.create_connection(factory, '127.0.0.1', 9000))
 
     try:
         loop.run_forever()
     except KeyboardInterrupt:
         pass
     finally:
-        guard_manager_ws_server.close()
         loop.close()
-
-
-def get_cmd_args():
-    parser = ArgumentParser()
-    parser.add_argument('-p', '--port', dest='port', default=GUARD_MANAGER_SERVER_WEB_SOCKET_PORT)
-    parser.add_argument('-l', '--log_level', dest='log_level', choices=['INFO', 'DEBUG'],
-                        default='DEBUG' if DEBUG else 'INFO')
-    return parser.parse_args()
-
-
-if __name__ == '__main__':
-    main()

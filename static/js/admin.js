@@ -1,8 +1,6 @@
 const GAME_PORT = '9000';
-const GUARD_MANAGER_PORT = '9090';
 const HOSTNAME = window.location.hostname;
 const GAME_URL = "ws://" + HOSTNAME + ":" + GAME_PORT;
-const GUARD_MANAGER_URL = "ws://" + HOSTNAME + ":" + GUARD_MANAGER_PORT;
 const ADMIN_SOCKET_URL = GAME_URL + "?client_type=Admin";
 const ADMIN_URL = '/admin';
 const STARTED = 'started';
@@ -20,7 +18,6 @@ const BOARD_BLOCKS_NUMBERS = [1, 2, 3, 4, 5];
 const IMAGES_ROOT = "static/images/";
 
 let adminSocket;
-let guardManagerSocket;
 let reconnectionRetryCount;
 let playersList;
 let startStopButton;
@@ -61,7 +58,6 @@ function main() {
     rootNode.appendChild(goldControlBlock);
 
     adminSocket = getAdminSocket();
-    guardManagerSocket = getGuardManagerSocket();
 }
 
 function getAdminSocket() {
@@ -169,7 +165,12 @@ function getGuardsControlBlock() {
     updateGuardsNumberButton.innerText = 'Update guards number';
 
     updateGuardsNumberButton.onclick = () => {
-        guardManagerSocket.send(guardsNumberButton.innerText)
+        $.post(ADMIN_URL, {
+            "command": "update_guards_number",
+            "args": guardsNumberButton.innerText
+        }, () => {
+            console.log('Guards number has been updated');
+        })
     };
     let decreaseGuardsNumberButton = document.createElement('button');
     decreaseGuardsNumberButton.innerText = '-';
@@ -225,17 +226,6 @@ function getGoldControlBlock() {
     goldControlBlock.appendChild(goldNumberButton);
     goldControlBlock.appendChild(increaseGoldNumberButton);
     return goldControlBlock
-}
-
-function getGuardManagerSocket() {
-    let guardManagerSocket = new WebSocket(GUARD_MANAGER_URL);
-    guardManagerSocket.onclose = () => {
-        console.log('Connection with guard manager server has been dropped');
-    };
-    guardManagerSocket.onopen = () => {
-        console.log('Connection with guard manager has been established');
-    };
-    return guardManagerSocket;
 }
 
 function getButtonWithImage(text, imageName) {
