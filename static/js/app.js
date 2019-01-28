@@ -241,5 +241,5 @@ function keyboardManager(game_board_socket) {
 
 websocketGame();
 
-// TODO: fix empty cell of players
+// TODO: fix empty cell of players after man regenerate
 // TODO: fix guard cell as hero

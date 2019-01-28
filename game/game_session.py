@@ -347,6 +347,7 @@ class LodeRunnerGameSession:
             raise
         else:
             is_paused = self.is_paused
+            gold_cells_number = len(self.gold_cells)
             self.stop()
             self.scenarios = {}
             self.game_board = LodeRunnerGameBoard.from_blocks_number(int(blocks_number))
@@ -354,7 +355,7 @@ class LodeRunnerGameSession:
             for participant in self._participants:
                 cell = choice(free_cells)
                 participant.set_cell(cell)
-            self.update_gold_cells(len(self.gold_cells))
+            self.update_gold_cells(gold_cells_number)
             self.broadcast(client_types=[SPECTATOR])
             self.is_paused = is_paused
 
