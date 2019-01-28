@@ -12,7 +12,7 @@ from game.game_participants import get_participant
 logger = getLogger()
 
 GOLD_CELLS_NUMBER = 30
-TICK_TIME = .3
+TICK_TIME = .1
 GUARD_NAME_PREFIX = "AI_"
 DRILL_SCENARIO = [CellType.Drill, CellType.Empty, CellType.Empty, CellType.Empty,
                   CellType.Empty, CellType.Empty, CellType.PitFill4, CellType.PitFill3,
@@ -38,13 +38,12 @@ class LodeRunnerGameSession:
     def __init__(self, loop, game_board: LodeRunnerGameBoard):
         self.loop = loop
         self.game_board = game_board
-        self.gold_cells = []
         self.registry = {}
         self.scenarios = {}
         self.is_paused = True
         self.is_started = False
         self.tick_time = TICK_TIME
-        self.spawn_gold_cells()
+        self.update_gold_cells()
 
     def broadcast(self, client_types=(SPECTATOR, PLAYER, GUARD)):
         logger.debug("Broadcasting data for websocket clients ...")
@@ -77,15 +76,19 @@ class LodeRunnerGameSession:
         self.loop.call_later(self.tick_time, self._tick)
 
     @admin_command_decorator
-    def spawn_gold_cells(self, number: int = GOLD_CELLS_NUMBER):
+    def update_gold_cells(self, number: int = GOLD_CELLS_NUMBER):
         number = int(number)
         if number != len(self.gold_cells):
             if self.gold_cells:
                 self.game_board.board_info.update({cell: CellType.Empty for cell in self.gold_cells})
 
-            self.gold_cells = choices(self._get_free_to_spawn_cells(), k=number)
-            self.game_board.board_info.update({cell: CellType.Gold for cell in self.gold_cells})
+            gold_cells = choices(self._get_free_to_spawn_cells(), k=number)
+            self.game_board.board_info.update({cell: CellType.Gold for cell in gold_cells})
             self.broadcast(client_types=(SPECTATOR,))
+
+    def spawn_gold_cell(self):
+        cell = choice(self._get_free_to_spawn_cells())
+        self.game_board.board_info[cell] = CellType.Gold
 
     def register_participant(self, client_id, name, participant_type):
         cell = choice(self._get_free_to_spawn_cells())
@@ -199,7 +202,7 @@ class LodeRunnerGameSession:
             player_object.pickup_gold()
         self.gold_cells.remove(cell)
         logger.debug("Gold cell %s has been picked up" % str(cell))
-        self.spawn_gold_cells(1)
+        self.spawn_gold_cell()
 
     def _process_drill(self, drill_action, player_object):
         logger.debug("Processing %s of %s" % (drill_action, vars(player_object)))
@@ -264,6 +267,10 @@ class LodeRunnerGameSession:
     @property
     def players_cells(self):
         return {player_object.name: player_object.cell for player_object in self.players}
+
+    @property
+    def gold_cells(self):
+        return [cell for cell in self.game_board.board_info if self.game_board.board_info[cell] == CellType.Gold]
 
     def is_player_name_in_registry(self, name):
         return name in [player_object.name for player_object in self.players]
@@ -331,8 +338,7 @@ class LodeRunnerGameSession:
             for participant in self._participants:
                 cell = choice(free_cells)
                 participant.set_cell(cell)
-            self.gold_cells = []
-            self.spawn_gold_cells(len(self.gold_cells))
+            self.update_gold_cells(len(self.gold_cells))
             self.broadcast(client_types=[SPECTATOR])
             self.is_paused = is_paused
 

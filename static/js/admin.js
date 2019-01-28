@@ -199,7 +199,7 @@ function getGoldControlBlock() {
     updateGoldNumberButton.innerText = 'Update gold cells number';
     updateGoldNumberButton.onclick = () => {
         $.post(ADMIN_URL, {
-            "command": "spawn_gold_cells",
+            "command": "update_gold_cells",
             "args": goldNumberButton.innerText
         }, () => {
             console.log('Gold cells have been re spawned');
