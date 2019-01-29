@@ -1,10 +1,13 @@
+from typing import Dict, Tuple, List
+
+
 PLAYER = 'Player'
 GUARD = 'Guard'
 SPECTATOR = 'Spectator'
 ADMIN = 'Admin'
 
 
-def get_board_info(board_layers):
+def get_board_info(board_layers: List[List]) -> Dict[Tuple[int, int], str]:
     board_info = {}
     for y_coord, line in enumerate(board_layers):
         for x_coord, cell_code in enumerate(line):

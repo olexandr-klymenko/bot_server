@@ -147,3 +147,6 @@ class BroadcastServerProtocol(WebSocketServerProtocol):
             return {'client_type': self.http_request_params['client_type'][0],
                     'name': self.http_request_params['name'][0]}
         return {'client_type': SPECTATOR, 'name': ''}
+
+
+# TODO: Improve register/unregister clients by implementing decorator

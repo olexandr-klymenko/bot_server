@@ -16,7 +16,7 @@ from game.game_participants import get_participant
 logger = getLogger()
 
 GOLD_CELLS_NUMBER = 30
-TICK_TIME = .5
+TICK_TIME = .1
 GUARD_NAME_PREFIX = "AI_"
 DRILL_SCENARIO = [CellType.Drill, CellType.Empty, CellType.Empty, CellType.Empty,
                   CellType.Empty, CellType.Empty, CellType.PitFill4, CellType.PitFill3,
@@ -281,6 +281,10 @@ class LodeRunnerGameSession:
         return {player_object.name: player_object.cell for player_object in self.players}
 
     @property
+    def player_clients(self):
+        return [client for _, client in self.clients_info.items() if client.client_info['client_type'] == PLAYER]
+
+    @property
     def guard_clients(self):
         return [client for _, client in self.clients_info.items() if client.client_info['client_type'] == GUARD]
 
@@ -356,6 +360,8 @@ class LodeRunnerGameSession:
                 cell = choice(free_cells)
                 participant.set_cell(cell)
             self.update_gold_cells(gold_cells_number)
+            for client in self.guard_clients + self.player_clients:
+                client.sendMessage(json.dumps({'reset': True}).encode())
             self.broadcast(client_types=[SPECTATOR])
             self.is_paused = is_paused
 

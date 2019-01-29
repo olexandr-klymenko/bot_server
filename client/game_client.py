@@ -1,5 +1,9 @@
 import asyncio
+from functools import partial
 from itertools import chain
+from multiprocessing import Pool
+from time import time
+from typing import Dict, List, Tuple
 
 import json
 from autobahn.asyncio import WebSocketClientFactory
@@ -51,6 +55,11 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
             if 'exit' in message:
                 raise SystemExit
 
+            if 'reset' in message:
+                self.joints_info = None
+                self.path_finder_cls = None
+                return
+
             board_layers = message['board']
             board_info = get_board_info(board_layers)
 
@@ -60,7 +69,9 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
             )
 
             self.path_finder_cls = self.path_finder_cls or path_finder_factory(self.joints_info,
-                                                                               self.target_cell_types
+                                                                               self.target_cell_types,
+                                                                               get_board_info(get_coerced_board_layers(
+                                                                                   board_layers))
                                                                                )
             path_finder = self.path_finder_cls(board_info)
             logger.debug(f"My cell: {str(path_finder.my_cell)}")
@@ -84,10 +95,16 @@ def get_coerced_board_layers(board_layers):
     return coerced
 
 
-def path_finder_factory(joints_info, target_cell_types):
+def path_finder_factory(joints_info, target_cell_types, initial_board_info: Dict):
+    get_wave_age_info_for_joints_info = partial(get_wave_age_info, joints_info)
+    pool = Pool(4)
+    global_wave_age_info = {
+        el[0]: el[1] for el in pool.map(get_wave_age_info_for_joints_info, initial_board_info.keys())
+    }
+
     class ClientPathFinder:
-        joints_info = None
         target_cell_types = None
+        global_wave_age_info = None
 
         def __init__(self, board_info):
             self.board_info = board_info
@@ -107,22 +124,24 @@ def path_finder_factory(joints_info, target_cell_types):
 
         def get_routed_move_action(self):
             if self.target_cells:
-                wave_age_info = get_wave_age_info(self.my_cell, self.joints_info)
-                next_cell = get_next_cell(self.target_cells, wave_age_info, self.joints_info)
+                start_time = time()
+                wave_age_info = self.global_wave_age_info[self.my_cell]
+                next_cell = get_next_cell(self.target_cells, wave_age_info, joints_info)
+                logger.info(f'Execution time: {time() - start_time}')
 
                 if next_cell:
                     return get_move_action(self.my_cell, next_cell)
-                elif self.joints_info[self.my_cell]:
-                    return get_move_action(self.my_cell, choice(self.joints_info[self.my_cell]))
+                elif joints_info[self.my_cell]:
+                    return get_move_action(self.my_cell, choice(joints_info[self.my_cell]))
 
             return choice(Move.get_valid_codes())
 
-    ClientPathFinder.joints_info = joints_info
     ClientPathFinder.target_cell_types = target_cell_types
+    ClientPathFinder.global_wave_age_info = global_wave_age_info
     return ClientPathFinder
 
 
-def get_wave_age_info(start_cell, joints_info):
+def get_wave_age_info(joints_info, start_cell):
     wave_info = {}
     wave_age = 1
     joints = joints_info[start_cell]
@@ -131,7 +150,7 @@ def get_wave_age_info(start_cell, joints_info):
         joints = set(list(chain(*[joints_info[cell] for cell in joints])))
         joints = joints - set(wave_info.keys())
         wave_age += 1
-    return wave_info
+    return start_cell, wave_info
 
 
 def get_next_cell(target_cells, wave_age_info, joints_info):
@@ -156,7 +175,7 @@ def get_move_action(start_cell, end_cell):
     return Move.Up
 
 
-def get_joints_info(board_info, size):
+def get_joints_info(board_info: Dict, size: int) -> Dict[Tuple[int, int], List]:
     joints_info = {}
     for vertical in range(size):
         for horizontal in range(size):
