@@ -1,15 +1,14 @@
 import asyncio
+import json
 from functools import partial
 from itertools import chain
+from logging import getLogger
 from multiprocessing import Pool
-from time import time
+from random import choice
 from typing import Dict, List, Tuple
 
-import json
 from autobahn.asyncio import WebSocketClientFactory
 from autobahn.asyncio.websocket import WebSocketClientProtocol
-from logging import getLogger
-from random import choice
 
 from common.utils import (PLAYER, GUARD, CellType, get_board_info, get_cell_neighbours, get_upper_cell,
                           Move, CellGroups, CELL_TYPE_COERCION, get_lower_cell)
@@ -124,10 +123,8 @@ def path_finder_factory(joints_info, target_cell_types, initial_board_info: Dict
 
         def get_routed_move_action(self):
             if self.target_cells:
-                start_time = time()
                 wave_age_info = self.global_wave_age_info[self.my_cell]
                 next_cell = get_next_cell(self.target_cells, wave_age_info, joints_info)
-                logger.info(f'Execution time: {time() - start_time}')
 
                 if next_cell:
                     return get_move_action(self.my_cell, next_cell)
