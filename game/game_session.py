@@ -96,7 +96,8 @@ class LodeRunnerGameSession:
         for client in self.guard_clients:
             client.sendMessage(json.dumps({'exit': True}).encode())
         for _ in range(number):
-            subprocess.Popen([sys.executable, pathlib.Path('client', 'guard_runner.py')])
+            subprocess.run(['pwd'])
+            subprocess.Popen([sys.executable, pathlib.Path('guard_runner.py')])
 
     def spawn_gold_cell(self):
         cell = choice(self._get_free_to_spawn_cells())

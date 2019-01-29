@@ -57,3 +57,7 @@ def get_cmd_args():
 
 if __name__ == '__main__':
     main()
+
+
+# TODO: Add docker support
+# TODO: Get back guards manager

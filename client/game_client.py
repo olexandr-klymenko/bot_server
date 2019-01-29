@@ -15,6 +15,8 @@ from common.utils import (PLAYER, GUARD, CellType, get_board_info, get_cell_neig
 
 logger = getLogger()
 
+MAX_MESSAGES = 3
+
 
 class GameClientFactory(WebSocketClientFactory):
     def __init__(self, url, client_type, name):
@@ -23,6 +25,7 @@ class GameClientFactory(WebSocketClientFactory):
         super().__init__(f'{url}?client_type={client_type}&name={name}')
         self.protocol = LodeRunnerClientProtocol
         self.client = None
+        self.messages = []
 
 
 class LodeRunnerClientProtocol(WebSocketClientProtocol):
@@ -50,6 +53,10 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
 
     def onMessage(self, payload, isBinary):
         if not isBinary:
+            self.factory.messages.append(payload)
+            if len(self.factory.messages) > MAX_MESSAGES:
+                return
+
             message = json.loads(payload.decode())
             if 'exit' in message:
                 raise SystemExit
