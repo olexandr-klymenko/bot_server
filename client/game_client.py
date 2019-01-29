@@ -3,9 +3,8 @@ import json
 from functools import partial
 from itertools import chain
 from logging import getLogger
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from random import choice
-from time import time
 from typing import Dict, List, Tuple
 
 from autobahn.asyncio import WebSocketClientFactory
@@ -106,27 +105,25 @@ def get_coerced_board_layers(board_layers):
 
 def path_finder_factory(joints_info, target_cell_types, board_info: Dict):
     get_wave_age_info_for_joints_info = partial(get_wave_age_info, joints_info)
-    pool = Pool(4)
+    pool = Pool(cpu_count())
     global_wave_age_info = {
         el[0]: el[1] for el in pool.map(get_wave_age_info_for_joints_info, board_info.keys())
     }
 
     class ClientPathFinder:
-        target_cell_types = None
-        global_wave_age_info = None
-        board_info = None
 
         def __init__(self, board_layers):
             self.my_cell, self.target_cells = self.get_my_cell_and_target_cells(board_layers)
 
-        def get_my_cell_and_target_cells(self, board_layers):
+        @staticmethod
+        def get_my_cell_and_target_cells(board_layers):
             target_cells = []
             my_cell = None
             for yid, layer in enumerate(board_layers):
                 for xid, cell_code in enumerate(layer):
                     if not my_cell and cell_code in CellGroups.HeroCellTypes:
                         my_cell = (xid, yid)
-                    elif cell_code in self.target_cell_types:
+                    elif cell_code in target_cell_types:
                         target_cells.append((xid, yid))
             return my_cell, target_cells
 
@@ -142,7 +139,7 @@ def path_finder_factory(joints_info, target_cell_types, board_info: Dict):
             return choice(Move.get_valid_codes())
 
         def get_next_cell(self):
-            wave_age_info = self.global_wave_age_info[self.my_cell]
+            wave_age_info = global_wave_age_info[self.my_cell]
             target_candidates = [cell for cell in self.target_cells if cell in wave_age_info]
             if target_candidates:
                 target_cell = min(target_candidates, key=lambda x: wave_age_info[x])
@@ -150,15 +147,12 @@ def path_finder_factory(joints_info, target_cell_types, board_info: Dict):
                 while wave_age > 1:
                     wave_age -= 1
                     target_cell = [
-                        cell for cell in get_cell_neighbours(target_cell, self.board_info)
+                        cell for cell in get_cell_neighbours(target_cell, board_info)
                         if
                         target_cell in joints_info[cell] and cell in wave_age_info and wave_age_info[cell] == wave_age
                     ][0]
                 return target_cell
 
-    ClientPathFinder.target_cell_types = target_cell_types
-    ClientPathFinder.global_wave_age_info = global_wave_age_info
-    ClientPathFinder.board_info = board_info
     return ClientPathFinder
 
 
