@@ -65,7 +65,8 @@ class BroadcastServerFactory(WebSocketServerFactory):
             'gold': len(self.game_session.gold_cells),
             'players': [client.client_info['name'] for client in self.player_clients],
             'started': not self.game_session.is_paused,
-            'size': self.game_session.game_board.blocks_number
+            'size': self.game_session.game_board.blocks_number,
+            'tick': self.game_session.tick_time
         }
 
     @property
@@ -150,3 +151,4 @@ class BroadcastServerProtocol(WebSocketServerProtocol):
 
 
 # TODO: Improve register/unregister clients by implementing decorator
+# TODO: Investigate issues with tick time ~ 0.1 sec
