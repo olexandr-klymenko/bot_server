@@ -2,7 +2,6 @@ import sys
 from itertools import chain
 
 import json
-import pathlib
 import subprocess
 from copy import deepcopy
 from functools import wraps

@@ -1,6 +1,5 @@
 from typing import Dict, Tuple, List
 
-
 PLAYER = 'Player'
 GUARD = 'Guard'
 SPECTATOR = 'Spectator'
@@ -83,10 +82,6 @@ def get_cell_neighbours(cell, board_info):
     return neighbours
 
 
-def get_upper_cell(cell):
-    return cell[0], cell[1] - 1
-
-
 class Move(CharCode):
     Right = 'Right'
     Left = 'Left'
@@ -96,7 +91,6 @@ class Move(CharCode):
 
 class CellGroups(object):
     ct = CellType
-
     PlayerCellTypes = [ct.PlayerLooksLeft, ct.PlayerLooksRight, ct.PlayerOnLadder, ct.PlayerOnPipeLooksLeft,
                        ct.PlayerOnPipeLooksRight]
 
@@ -140,12 +134,16 @@ def get_lower_cell(cell):
     return cell[0], cell[1] + 1
 
 
-def get_left_cell(cell):
-    return cell[0] - 1, cell[1]
+def get_upper_cell(cell):
+    return cell[0], cell[1] - 1
 
 
 def get_right_cell(cell):
     return cell[0] + 1, cell[1]
+
+
+def get_left_cell(cell):
+    return cell[0] - 1, cell[1]
 
 
 class Drill(CharCode):
