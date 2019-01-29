@@ -36,12 +36,6 @@ class BroadcastServerFactory(WebSocketServerFactory):
     def spectators(self):
         return [value for key, value in self.clients_info.items() if value.client_info['client_type'] == SPECTATOR]
 
-    def broadcast(self, client_types=(SPECTATOR, PLAYER, GUARD)):
-        logger.debug("Broadcasting data for websocket clients ...")
-        for client_id, client in self.clients_info.items():
-            if client.client_info['client_type'] in client_types:
-                client.sendMessage(json.dumps(self.game_session.get_session_info(client_id)).encode())
-
     @factory_action_decorator
     def register_client(self, client):
         if client.client_info['client_type'] == ADMIN:
@@ -151,4 +145,3 @@ class BroadcastServerProtocol(WebSocketServerProtocol):
 
 
 # TODO: Improve register/unregister clients by implementing decorator
-# TODO: Investigate issues with tick time ~ 0.1 sec

@@ -63,7 +63,6 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
                 return
 
             board_layers = message['board']
-            start_time = time()
 
             self.board_info = self.board_info or get_board_info(get_coerced_board_layers(board_layers))
 
@@ -74,12 +73,9 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
                                                                                self.board_info)
 
             path_finder = self.path_finder_cls(board_layers)
-            logger.debug(f"My cell: {str(path_finder.my_cell)}")
-            logger.debug(f"Gold cells: {path_finder.target_cells}")
             action = path_finder.get_routed_move_action()
             self.sendMessage(bytes(action.encode()))
             logger.debug(f"'{self.name}' has sent message: '{action}'")
-            print(time() - start_time)
 
     def get_joints_info(self, size: int) -> Dict[Tuple[int, int], List]:
         joints_info = {}
