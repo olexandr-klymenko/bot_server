@@ -13,6 +13,15 @@ from common.utils import (PLAYER, GUARD, CellType, get_board_info, get_cell_neig
 logger = getLogger()
 
 
+class GameClientFactory(WebSocketClientFactory):
+    def __init__(self, url, client_type, name):
+        self.name = name
+        self.client_type = client_type
+        super().__init__(f'{url}?client_type={client_type}&name={name}')
+        self.protocol = LodeRunnerClientProtocol
+        self.client = None
+
+
 class LodeRunnerClientProtocol(WebSocketClientProtocol):
     target_cell_types = None
     joints_info = None
@@ -82,24 +91,24 @@ def path_finder_factory(joints_info, target_cell_types):
 
         def __init__(self, board_info):
             self.board_info = board_info
-            self.my_cell, self.target_cells = self.my_cell_and_gold()
+            self.my_cell, self.target_cells = self.my_cell_and_target_cells()
 
-        def my_cell_and_gold(self):
-            gold_cells = []
+        def my_cell_and_target_cells(self):
+            target_cells = []
             my_cell = None
             for cell, cell_code in self.board_info.items():
                 if cell_code in CellGroups.HeroCellTypes:
                     my_cell = cell
                 elif cell_code in self.target_cell_types:
-                    gold_cells.append(cell)
+                    target_cells.append(cell)
             if my_cell is None:
                 raise Exception("Couldn't find my cell")
-            return my_cell, gold_cells
+            return my_cell, target_cells
 
         def get_routed_move_action(self):
             if self.target_cells:
                 wave_age_info = get_wave_age_info(self.my_cell, self.joints_info)
-                next_cell = get_route(self.target_cells, wave_age_info, self.joints_info)
+                next_cell = get_next_cell(self.target_cells, wave_age_info, self.joints_info)
 
                 if next_cell:
                     return get_move_action(self.my_cell, next_cell)
@@ -125,7 +134,7 @@ def get_wave_age_info(start_cell, joints_info):
     return wave_info
 
 
-def get_route(target_cells, wave_age_info, joints_info):
+def get_next_cell(target_cells, wave_age_info, joints_info):
     target_candidates = [cell for cell in target_cells if cell in wave_age_info]
     if target_candidates:
         target_cell = min(target_candidates, key=lambda x: wave_age_info[x])
@@ -182,12 +191,3 @@ def is_pass(start_cell, end_cell, board_info):
         return False
 
     return True
-
-
-class GameClientFactory(WebSocketClientFactory):
-    def __init__(self, url, client_type, name):
-        self.name = name
-        self.client_type = client_type
-        super().__init__(f'{url}?client_type={client_type}&name={name}')
-        self.protocol = LodeRunnerClientProtocol
-        self.client = None
