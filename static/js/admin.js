@@ -7,6 +7,7 @@ const STARTED = 'started';
 const SIZE = 'size';
 const GUARDS = 'guards';
 const GOLD = 'gold';
+const TICK = 'tick';
 const DEFAULT_RECONNECTION_RETRY_COUNT = 10;
 const RECONNECTION_RETRY_TIMEOUT = 1000;
 const PLAYERS_LIST_ID = 'players';
@@ -29,6 +30,9 @@ let updateGuardsNumberButton;
 let goldControlBlock;
 let goldNumberButton;
 let updateGoldNumberButton;
+let tickControlBlock;
+let tickTimeButton;
+let updateTickTimeButton;
 let rootNode;
 
 
@@ -48,6 +52,7 @@ function main() {
 
     guardsControlBlock = getGuardsControlBlock();
     goldControlBlock = getGoldControlBlock();
+    tickControlBlock = getTickControlBlock();
 
     rootNode.appendChild(playersList);
     rootNode.appendChild(startStopButton);
@@ -56,6 +61,7 @@ function main() {
     rootNode.appendChild(boardSizeSelect);
     rootNode.appendChild(guardsControlBlock);
     rootNode.appendChild(goldControlBlock);
+    rootNode.appendChild(tickControlBlock);
 
     adminSocket = getAdminSocket();
 }
@@ -69,7 +75,8 @@ function getAdminSocket() {
         showStartStopButton(sessionInfo[STARTED]);
         document.getElementById(BOARD_SIZE_SELECT_ID).value = sessionInfo[SIZE];
         guardsNumberButton.innerText = sessionInfo[GUARDS];
-        goldNumberButton.innerText = sessionInfo[GOLD]
+        goldNumberButton.innerText = sessionInfo[GOLD];
+        tickTimeButton.innerText = sessionInfo[TICK]
     };
     adminSocket.onclose = () => {
         console.log('Connection with game server has been dropped');
@@ -228,6 +235,40 @@ function getGoldControlBlock() {
     return goldControlBlock
 }
 
+function getTickControlBlock() {
+    let tickTimeControlBlock = document.createElement('div');
+    updateTickTimeButton = document.createElement('button');
+    updateTickTimeButton.innerText = 'Update tick time, sec';
+    updateTickTimeButton.onclick = () => {
+        $.post(ADMIN_URL, {
+            "command": "set_tick_time",
+            "args": tickTimeButton.innerText
+        }, () => {
+            console.log('Tick time has been updated');
+        })
+    };
+    let decreaseTickTimeButton = document.createElement('button');
+    decreaseTickTimeButton.innerText = '-';
+    decreaseTickTimeButton.onclick = () => {
+        if (tickTimeButton.innerText !== '0.1') {
+            tickTimeButton.innerText = (parseFloat(tickTimeButton.innerText) - 0.1).toFixed(1);
+        }
+    };
+
+    tickTimeButton = document.createElement('button');
+    let increaseTickTimeButton = document.createElement('button');
+    increaseTickTimeButton.innerText = '+';
+    increaseTickTimeButton.onclick = () => {
+        tickTimeButton.innerText = (parseFloat(tickTimeButton.innerText) + 0.1).toFixed(1);
+    };
+
+    tickTimeControlBlock.appendChild(updateTickTimeButton);
+    tickTimeControlBlock.appendChild(decreaseTickTimeButton);
+    tickTimeControlBlock.appendChild(tickTimeButton);
+    tickTimeControlBlock.appendChild(increaseTickTimeButton);
+    return tickTimeControlBlock
+}
+
 function getButtonWithImage(text, imageName) {
     return text + ' <img src=' + IMAGES_ROOT + imageName + '/>'
 }
@@ -235,5 +276,4 @@ function getButtonWithImage(text, imageName) {
 main();
 
 // TODO: set session time
-// TODO: Disconnect guard manager handle
 // TODO: add images to buttons

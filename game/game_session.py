@@ -16,7 +16,7 @@ from game.game_participants import get_participant
 logger = getLogger()
 
 GOLD_CELLS_NUMBER = 30
-TICK_TIME = .1
+TICK_TIME = .5
 GUARD_NAME_PREFIX = "AI_"
 DRILL_SCENARIO = [CellType.Drill, CellType.Empty, CellType.Empty, CellType.Empty,
                   CellType.Empty, CellType.Empty, CellType.PitFill4, CellType.PitFill3,
