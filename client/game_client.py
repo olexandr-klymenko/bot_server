@@ -53,13 +53,13 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
 
     def onMessage(self, payload, isBinary):
         if not isBinary:
-            self.factory.messages.append(payload)
-            if len(self.factory.messages) > MAX_MESSAGES:
-                return
-
             message = json.loads(payload.decode())
             if 'exit' in message:
                 raise SystemExit
+
+            self.factory.messages.append(payload)
+            if len(self.factory.messages) > MAX_MESSAGES:
+                return
 
             if 'reset' in message:
                 self.joints_info = None

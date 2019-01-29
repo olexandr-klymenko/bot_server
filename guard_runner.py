@@ -27,10 +27,10 @@ def main():
         except ConnectionRefusedError:
             pass
             loop.run_until_complete(asyncio.sleep(1))
-        except KeyboardInterrupt:
+        except Exception:
+            loop.stop()
             loop.close()
-        except Exception as err:
-            print(str(err))
+            raise
 
 
 if __name__ == '__main__':
