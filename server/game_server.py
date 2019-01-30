@@ -58,9 +58,11 @@ class BroadcastServerFactory(WebSocketServerFactory):
             'guards': len(self.guard_clients),
             'gold': len(self.game_session.gold_cells),
             'players': [client.client_info['name'] for client in self.player_clients],
-            'started': not self.game_session.is_paused,
             'size': self.game_session.game_board.blocks_number,
-            'tick': self.game_session.tick_time
+            'tick': self.game_session.tick_time,
+            'is_running': self.game_session.is_running,
+            'is_paused': self.game_session.is_paused,
+            'timespan': self.game_session.session_timespan
         }
 
     @property
@@ -145,3 +147,4 @@ class BroadcastServerProtocol(WebSocketServerProtocol):
 
 
 # TODO: Improve register/unregister clients by implementing decorator
+# TODO: Handle pause/resume, etc: make all admin commands feedback to admin client

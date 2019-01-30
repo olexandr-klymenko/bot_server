@@ -3,7 +3,8 @@ const HOSTNAME = window.location.hostname;
 const GAME_URL = "ws://" + HOSTNAME + ":" + GAME_PORT;
 const ADMIN_SOCKET_URL = GAME_URL + "?client_type=Admin";
 const ADMIN_URL = '/admin';
-const STARTED = 'started';
+const IS_RUNNING = 'is_running';
+const IS_PAUSED = 'is_paused';
 const SIZE = 'size';
 const GUARDS = 'guards';
 const GOLD = 'gold';
@@ -12,6 +13,7 @@ const DEFAULT_RECONNECTION_RETRY_COUNT = 10;
 const RECONNECTION_RETRY_TIMEOUT = 1000;
 const PLAYERS_LIST_ID = 'players';
 const START_STOP_BUTTON_ID = 'startStopButton';
+const PAUSE_RESUME_BUTTON_ID = 'pauseResumeButton';
 const REGENERATE_BOARD_BUTTON_ID = 'regenerateBoardButton';
 const BOARD_SIZE_SELECT_ID = 'boardSizeSelect';
 const ROOT_NODE_ID = 'rootNode';
@@ -22,8 +24,8 @@ let adminSocket;
 let reconnectionRetryCount;
 let playersList;
 let startStopButton;
-let regenerateBoardButton;
-let boardSizeSelect;
+let pauseResumeButton;
+let regenerateBoardBlock;
 let guardsControlBlock;
 let guardsNumberButton;
 let updateGuardsNumberButton;
@@ -47,18 +49,18 @@ function main() {
     startStopButton = document.createElement('button');
     startStopButton.id = START_STOP_BUTTON_ID;
 
-    regenerateBoardButton = getRegenerateBoardButton();
-    boardSizeSelect = getBoardSizeSelect();
+    pauseResumeButton = document.createElement('button');
+    pauseResumeButton.id = PAUSE_RESUME_BUTTON_ID;
 
+    regenerateBoardBlock = getRegenerateBoardBlock();
     guardsControlBlock = getGuardsControlBlock();
     goldControlBlock = getGoldControlBlock();
     tickControlBlock = getTickControlBlock();
 
     rootNode.appendChild(playersList);
     rootNode.appendChild(startStopButton);
-    rootNode.appendChild(document.createElement('br'));
-    rootNode.appendChild(regenerateBoardButton);
-    rootNode.appendChild(boardSizeSelect);
+    rootNode.appendChild(pauseResumeButton);
+    rootNode.appendChild(regenerateBoardBlock);
     rootNode.appendChild(guardsControlBlock);
     rootNode.appendChild(goldControlBlock);
     rootNode.appendChild(tickControlBlock);
@@ -72,7 +74,8 @@ function getAdminSocket() {
         let sessionInfo = JSON.parse(event.data);
         console.log(sessionInfo);
         showPlayers(sessionInfo[PLAYERS_LIST_ID]);
-        showStartStopButton(sessionInfo[STARTED]);
+        showStartStopButton(sessionInfo[IS_RUNNING]);
+        showPauseResumeButton(sessionInfo[IS_PAUSED]);
         document.getElementById(BOARD_SIZE_SELECT_ID).value = sessionInfo[SIZE];
         guardsNumberButton.innerText = sessionInfo[GUARDS];
         goldNumberButton.innerText = sessionInfo[GOLD];
@@ -108,9 +111,9 @@ function showPlayers(players) {
     }
 }
 
-function showStartStopButton(isStarted) {
-    let startStopButton = document.getElementById(START_STOP_BUTTON_ID);
-    if (isStarted) {
+function showStartStopButton(isRunning) {
+    startStopButton = document.getElementById(START_STOP_BUTTON_ID);
+    if (isRunning) {
         startStopButton.innerText = 'Stop Game';
         startStopButton.removeEventListener("click", handleStart);
         startStopButton.addEventListener("click", handleStop);
@@ -141,7 +144,20 @@ function handleStop() {
     })
 }
 
-function getRegenerateBoardButton() {
+function showPauseResumeButton(isPaused) {
+    pauseResumeButton = document.getElementById(PAUSE_RESUME_BUTTON_ID);
+    if (isPaused) {
+        pauseResumeButton.innerText = 'Resume Game';
+    } else {
+        pauseResumeButton.innerText = 'Pause Game';
+    }
+    pauseResumeButton.onclick = () => {
+        $.post("/admin", {"command": "pause_resume"})
+    }
+}
+
+function getRegenerateBoardBlock() {
+    let blockDiv = document.createElement('div');
     let regenerateBoardButton = document.createElement('button');
     regenerateBoardButton.id = REGENERATE_BOARD_BUTTON_ID;
     regenerateBoardButton.innerText = 'Regenerate Game Board';
@@ -153,21 +169,21 @@ function getRegenerateBoardButton() {
             console.log('Game board has been regenerated');
         })
     };
-    return regenerateBoardButton
-}
 
-function getBoardSizeSelect() {
     let boardSizeSelect = document.createElement('select');
     boardSizeSelect.id = BOARD_SIZE_SELECT_ID;
     for(let idx = 0; idx < BOARD_BLOCKS_NUMBERS.length; idx++) {
         let option = new Option(BOARD_BLOCKS_NUMBERS[idx], BOARD_BLOCKS_NUMBERS[idx]);
         boardSizeSelect.appendChild(option);
     }
-    return boardSizeSelect
+
+    blockDiv.appendChild(regenerateBoardButton);
+    blockDiv.appendChild(boardSizeSelect);
+    return blockDiv
 }
 
 function getGuardsControlBlock() {
-    let guardsControlBlock = document.createElement('div');
+    let blockDiv = document.createElement('div');
     updateGuardsNumberButton = document.createElement('button');
     updateGuardsNumberButton.innerText = 'Update guards number';
 
@@ -179,26 +195,27 @@ function getGuardsControlBlock() {
             console.log('Guards number has been updated');
         })
     };
-    let decreaseGuardsNumberButton = document.createElement('button');
-    decreaseGuardsNumberButton.innerText = '-';
-    decreaseGuardsNumberButton.onclick = () => {
+    let decreaseButton = document.createElement('button');
+    decreaseButton.innerText = '-';
+    decreaseButton.onclick = () => {
         if (guardsNumberButton.innerText !== '0') {
             guardsNumberButton.innerText = parseInt(guardsNumberButton.innerText) - 1;
         }
     };
 
     guardsNumberButton = document.createElement('button');
-    let increaseGuardsNumberButton = document.createElement('button');
-    increaseGuardsNumberButton.innerText = '+';
-    increaseGuardsNumberButton.onclick = () => {
+    guardsNumberButton.disabled = true;
+    let increaseButton = document.createElement('button');
+    increaseButton.innerText = '+';
+    increaseButton.onclick = () => {
         guardsNumberButton.innerText = parseInt(guardsNumberButton.innerText) + 1;
     };
 
-    guardsControlBlock.appendChild(updateGuardsNumberButton);
-    guardsControlBlock.appendChild(decreaseGuardsNumberButton);
-    guardsControlBlock.appendChild(guardsNumberButton);
-    guardsControlBlock.appendChild(increaseGuardsNumberButton);
-    return guardsControlBlock
+    blockDiv.appendChild(updateGuardsNumberButton);
+    blockDiv.appendChild(decreaseButton);
+    blockDiv.appendChild(guardsNumberButton);
+    blockDiv.appendChild(increaseButton);
+    return blockDiv
 }
 
 function getGoldControlBlock() {
@@ -275,5 +292,5 @@ function getButtonWithImage(text, imageName) {
 
 main();
 
-// TODO: set session time
+// TODO: add session timespan control
 // TODO: add images to buttons
