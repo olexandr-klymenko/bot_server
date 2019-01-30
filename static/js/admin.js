@@ -9,11 +9,14 @@ const SIZE = 'size';
 const GUARDS = 'guards';
 const GOLD = 'gold';
 const TICK = 'tick';
+const TIMESPAN = 'timespan';
+const TIMER = 'timer';
 const DEFAULT_RECONNECTION_RETRY_COUNT = 10;
 const RECONNECTION_RETRY_TIMEOUT = 1000;
 const PLAYERS_LIST_ID = 'players';
 const START_STOP_BUTTON_ID = 'startStopButton';
 const PAUSE_RESUME_BUTTON_ID = 'pauseResumeButton';
+const TIMER_BUTTON_ID = 'timerButton';
 const REGENERATE_BOARD_BUTTON_ID = 'regenerateBoardButton';
 const BOARD_SIZE_SELECT_ID = 'boardSizeSelect';
 const ROOT_NODE_ID = 'rootNode';
@@ -25,6 +28,7 @@ let reconnectionRetryCount;
 let playersList;
 let startStopButton;
 let pauseResumeButton;
+let timeSpanControlBlock;
 let regenerateBoardBlock;
 let guardsControlBlock;
 let guardsNumberButton;
@@ -34,6 +38,8 @@ let goldNumberButton;
 let updateGoldNumberButton;
 let tickControlBlock;
 let tickTimeButton;
+let timeSpanButton;
+let timerButton;
 let updateTickTimeButton;
 let rootNode;
 
@@ -51,19 +57,25 @@ function main() {
 
     pauseResumeButton = document.createElement('button');
     pauseResumeButton.id = PAUSE_RESUME_BUTTON_ID;
+    timerButton = document.createElement('button');
+    timerButton.id = TIMER_BUTTON_ID;
 
+    timeSpanControlBlock = getTimeSpanControlBlock();
     regenerateBoardBlock = getRegenerateBoardBlock();
     guardsControlBlock = getGuardsControlBlock();
     goldControlBlock = getGoldControlBlock();
     tickControlBlock = getTickControlBlock();
 
-    rootNode.appendChild(playersList);
     rootNode.appendChild(startStopButton);
     rootNode.appendChild(pauseResumeButton);
+    rootNode.appendChild(timerButton);
+    rootNode.appendChild(timeSpanControlBlock);
+
     rootNode.appendChild(regenerateBoardBlock);
     rootNode.appendChild(guardsControlBlock);
     rootNode.appendChild(goldControlBlock);
     rootNode.appendChild(tickControlBlock);
+    rootNode.appendChild(playersList);
 
     adminSocket = getAdminSocket();
 }
@@ -79,7 +91,9 @@ function getAdminSocket() {
         document.getElementById(BOARD_SIZE_SELECT_ID).value = sessionInfo[SIZE];
         guardsNumberButton.innerText = sessionInfo[GUARDS];
         goldNumberButton.innerText = sessionInfo[GOLD];
-        tickTimeButton.innerText = sessionInfo[TICK]
+        tickTimeButton.innerText = sessionInfo[TICK];
+        timeSpanButton.innerText = sessionInfo[TIMESPAN];
+        timerButton.innerText = sessionInfo[TIMER]
     };
     adminSocket.onclose = () => {
         console.log('Connection with game server has been dropped');
@@ -259,7 +273,7 @@ function getTickControlBlock() {
     updateTickTimeButton.onclick = () => {
         $.post(ADMIN_URL, {
             "command": "set_tick_time",
-            "args": tickTimeButton.innerText
+            "args": parseFloat(tickTimeButton.innerText).toFixed(1)
         }, () => {
             console.log('Tick time has been updated');
         })
@@ -286,11 +300,44 @@ function getTickControlBlock() {
     return tickTimeControlBlock
 }
 
+function getTimeSpanControlBlock() {
+    let rootDiv = document.createElement('div');
+    let updateButton = document.createElement('button');
+    updateButton.innerText = 'Update timespan, sec';
+    updateButton.onclick = () => {
+        $.post(ADMIN_URL, {
+            "command": "set_session_timespan",
+            "args": parseInt(timeSpanButton.innerText)
+        }, () => {
+            console.log('Tick time has been updated');
+        })
+    };
+    let decreaseButton = document.createElement('button');
+    decreaseButton.innerText = '-';
+    decreaseButton.onclick = () => {
+        if (timeSpanButton.innerText !== '10') {
+            timeSpanButton.innerText = parseInt(timeSpanButton.innerText) - 10;
+        }
+    };
+
+    timeSpanButton = document.createElement('button');
+    let increaseButton = document.createElement('button');
+    increaseButton.innerText = '+';
+    increaseButton.onclick = () => {
+        timeSpanButton.innerText = parseInt(timeSpanButton.innerText) + 10;
+    };
+
+    rootDiv.appendChild(updateButton);
+    rootDiv.appendChild(decreaseButton);
+    rootDiv.appendChild(timeSpanButton);
+    rootDiv.appendChild(increaseButton);
+    return rootDiv
+}
+
 function getButtonWithImage(text, imageName) {
     return text + ' <img src=' + IMAGES_ROOT + imageName + '/>'
 }
 
 main();
 
-// TODO: add session timespan control
 // TODO: add images to buttons

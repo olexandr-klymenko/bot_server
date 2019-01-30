@@ -61,7 +61,8 @@ class BroadcastServerFactory(WebSocketServerFactory):
             'tick': self.game_session.tick_time,
             'is_running': self.game_session.is_running,
             'is_paused': self.game_session.is_paused,
-            'timespan': self.game_session.session_timespan
+            'timespan': self.game_session.session_timespan,
+            'timer': self.game_session.timer
         }
         self.admin_client.sendMessage(json.dumps(admin_info).encode())
 
@@ -144,6 +145,5 @@ class BroadcastServerProtocol(WebSocketServerProtocol):
             return {'client_type': self.http_request_params['client_type'][0],
                     'name': self.http_request_params['name'][0]}
         return {'client_type': SPECTATOR, 'name': ''}
-
 
 # TODO: Improve register/unregister clients by implementing decorator

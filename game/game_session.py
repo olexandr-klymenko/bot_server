@@ -1,13 +1,14 @@
 import gc
+import sys
+import time
+from itertools import chain
+
 import json
 import subprocess
-import sys
 from copy import deepcopy
 from functools import wraps
-from itertools import chain
 from logging import getLogger
 from random import choice, choices
-import time
 
 from common.utils import PLAYER, GUARD, SPECTATOR, CellType, get_cell_neighbours, Move, get_lower_cell, Drill
 from game.game_board import LodeRunnerGameBoard
@@ -17,7 +18,7 @@ logger = getLogger()
 
 GOLD_CELLS_NUMBER = 30
 TICK_TIME = .5
-DEFAULT_SESSION_TIMESPAN = 1 * 60
+DEFAULT_SESSION_TIMESPAN = 15 * 60
 GUARD_DESTROY_TIMEOUT = 1
 GUARD_NAME_PREFIX = "AI_"
 DRILL_SCENARIO = [CellType.Drill, CellType.Empty, CellType.Empty, CellType.Empty,
@@ -83,7 +84,7 @@ class LodeRunnerGameSession:
     @admin_command_decorator
     def set_session_timespan(self, session_timespan):
         if not self.is_running:
-            self.session_timespan = session_timespan
+            self.session_timespan = int(session_timespan)
             logger.info(f'Game session timespan has been set to {session_timespan}')
             self.send_admin_info_callback()
 
@@ -92,12 +93,14 @@ class LodeRunnerGameSession:
             self.process_gravity()
             self.process_drill_scenario()
             self.broadcast()
+            self.send_admin_info_callback()
             self.allow_participants_action()
 
         if time.time() - self.start_time < self.session_timespan and self.is_running:
             self.loop.call_later(self.tick_time, self._tick)
         else:
             self.is_running = False
+            self.send_admin_info_callback()
             logger.info('Game session has been ended')
 
     @admin_command_decorator
@@ -109,10 +112,8 @@ class LodeRunnerGameSession:
                     self.game_board.board_info.update({cell: CellType.Empty for cell in self.gold_cells})
 
                 gold_cells = choices(self._get_free_to_spawn_cells(), k=number)
-                print(len(gold_cells))
                 self.game_board.board_info.update({cell: CellType.Gold for cell in gold_cells})
                 self.broadcast(client_types=(SPECTATOR,))
-                print(len(self.gold_cells))
 
             if self.send_admin_info_callback:
                 self.send_admin_info_callback()
@@ -137,6 +138,12 @@ class LodeRunnerGameSession:
                 self.guard_runner_processes.append(
                     subprocess.Popen([sys.executable, 'guard_runner.py'])
                 )
+
+    @property
+    def timer(self):
+        if self.is_running:
+            return int(self.session_timespan - (time.time() - self.start_time))
+        return self.session_timespan
 
     def spawn_gold_cell(self):
         cell = choice(self._get_free_to_spawn_cells())
