@@ -40,6 +40,7 @@ def admin_command_decorator(func):
 
 class LodeRunnerGameSession:
     clients_info = None
+    send_admin_info_callback = None
 
     def __init__(self, loop, game_board: LodeRunnerGameBoard):
         self.loop = loop
@@ -77,12 +78,14 @@ class LodeRunnerGameSession:
     @admin_command_decorator
     def pause_resume(self):
         self.is_paused = not self.is_paused
+        self.send_admin_info_callback()
 
     @admin_command_decorator
     def set_session_timespan(self, session_timespan):
         if not self.is_running:
             self.session_timespan = session_timespan
             logger.info(f'Game session timespan has been set to {session_timespan}')
+            self.send_admin_info_callback()
 
     def _tick(self):
         if not self.is_paused:
@@ -106,8 +109,13 @@ class LodeRunnerGameSession:
                     self.game_board.board_info.update({cell: CellType.Empty for cell in self.gold_cells})
 
                 gold_cells = choices(self._get_free_to_spawn_cells(), k=number)
+                print(len(gold_cells))
                 self.game_board.board_info.update({cell: CellType.Gold for cell in gold_cells})
                 self.broadcast(client_types=(SPECTATOR,))
+                print(len(self.gold_cells))
+
+            if self.send_admin_info_callback:
+                self.send_admin_info_callback()
 
     @admin_command_decorator
     def update_guards_number(self, number):

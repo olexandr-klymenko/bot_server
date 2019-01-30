@@ -25,6 +25,7 @@ def main():
 
     game_factory = BroadcastServerFactory(url=f"{GAME_SERVER_WEB_SOCKET_URL}:{cmd_args.port}")
     game_session.clients_info = game_factory.clients_info
+    game_session.send_admin_info_callback = game_factory.send_admin_info
     game_factory.game_session = game_session
     game_factory.protocol = BroadcastServerProtocol
 

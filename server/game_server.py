@@ -50,11 +50,10 @@ class BroadcastServerFactory(WebSocketServerFactory):
 
         self.admin_client = client
         logger.info(f"Registered Admin client {client.peer}")
-        self.admin_client.sendMessage(json.dumps(self.game_info).encode())
+        self.send_admin_info()
 
-    @property
-    def game_info(self):
-        return {
+    def send_admin_info(self):
+        admin_info = {
             'guards': len(self.guard_clients),
             'gold': len(self.game_session.gold_cells),
             'players': [client.client_info['name'] for client in self.player_clients],
@@ -64,6 +63,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
             'is_paused': self.game_session.is_paused,
             'timespan': self.game_session.session_timespan
         }
+        self.admin_client.sendMessage(json.dumps(admin_info).encode())
 
     @property
     def guard_clients(self):
@@ -94,7 +94,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
                 client.sendMessage(json.dumps(self.game_session.get_session_info(client_id)).encode())
 
         if self.admin_client is not None:
-            self.admin_client.sendMessage(json.dumps(self.game_info).encode())
+            self.send_admin_info()
 
     @factory_action_decorator
     def unregister(self, client):
@@ -108,7 +108,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
                     client.sendMessage(json.dumps(self.game_session.get_session_info(client_id)).encode())
 
                 if self.admin_client:
-                    self.admin_client.sendMessage(json.dumps(self.game_info).encode())
+                    self.send_admin_info()
 
     @factory_action_decorator
     def process_message(self, client, message):
@@ -147,4 +147,3 @@ class BroadcastServerProtocol(WebSocketServerProtocol):
 
 
 # TODO: Improve register/unregister clients by implementing decorator
-# TODO: Handle pause/resume, etc: make all admin commands feedback to admin client
