@@ -94,6 +94,7 @@ class LodeRunnerGameSession:
 
     @admin_command_decorator
     def update_guards_number(self, number):
+        # TODO: Implement passing global wave age info to guard_runner
         number = int(number)
 
         if self.guard_clients:
