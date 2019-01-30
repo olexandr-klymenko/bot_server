@@ -1,17 +1,14 @@
 import asyncio
 import json
-from functools import partial
-from itertools import chain
 from logging import getLogger
-from multiprocessing import Pool, cpu_count
 from random import choice
-from typing import Dict, List, Tuple
+from typing import Dict
 
 from autobahn.asyncio import WebSocketClientFactory
 from autobahn.asyncio.websocket import WebSocketClientProtocol
 
-from common.utils import (PLAYER, GUARD, CellType, get_board_info, get_cell_neighbours, get_upper_cell,
-                          Move, CellGroups, CELL_TYPE_COERCION, get_lower_cell)
+from common.utils import (PLAYER, GUARD, CellType, get_board_info, get_cell_neighbours, Move, CellGroups,
+                          CELL_TYPE_COERCION, get_global_wave_age_info, get_joints_info)
 
 logger = getLogger()
 
@@ -65,7 +62,7 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
 
             self.board_info = self.board_info or get_board_info(get_coerced_board_layers(board_layers))
 
-            self.joints_info = self.joints_info or self.get_joints_info(len(board_layers))
+            self.joints_info = self.joints_info or get_joints_info(len(board_layers), self.board_info)
 
             self.path_finder_cls = self.path_finder_cls or path_finder_factory(self.joints_info,
                                                                                self.target_cell_types,
@@ -75,18 +72,6 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
             action = path_finder.get_routed_move_action()
             self.sendMessage(bytes(action.encode()))
             logger.debug(f"'{self.name}' has sent message: '{action}'")
-
-    def get_joints_info(self, size: int) -> Dict[Tuple[int, int], List]:
-        joints_info = {}
-        for vertical in range(size):
-            for horizontal in range(size):
-                cell = horizontal, vertical
-                cell_joints = []
-                for neighbour_cell in get_cell_neighbours(cell, self.board_info):
-                    if is_pass(cell, neighbour_cell, self.board_info):
-                        cell_joints.append(neighbour_cell)
-                joints_info.update({cell: cell_joints})
-        return joints_info
 
     def onClose(self, wasClean, code, reason):
         logger.info(f"WebSocket connection of '{self.name}' closed: {reason}")
@@ -104,11 +89,7 @@ def get_coerced_board_layers(board_layers):
 
 
 def path_finder_factory(joints_info, target_cell_types, board_info: Dict):
-    get_wave_age_info_for_joints_info = partial(get_wave_age_info, joints_info)
-    pool = Pool(cpu_count())
-    global_wave_age_info = {
-        el[0]: el[1] for el in pool.map(get_wave_age_info_for_joints_info, board_info.keys())
-    }
+    global_wave_age_info = get_global_wave_age_info(joints_info, board_info)
 
     class ClientPathFinder:
 
@@ -156,18 +137,6 @@ def path_finder_factory(joints_info, target_cell_types, board_info: Dict):
     return ClientPathFinder
 
 
-def get_wave_age_info(joints_info, start_cell):
-    wave_info = {}
-    wave_age = 1
-    joints = joints_info[start_cell]
-    while joints:
-        wave_info.update({cell: wave_age for cell in joints})
-        joints = set(list(chain(*[joints_info[cell] for cell in joints])))
-        joints = joints - set(wave_info.keys())
-        wave_age += 1
-    return start_cell, wave_info
-
-
 def get_move_action(start_cell, end_cell):
     if end_cell[0] - start_cell[0] == 1:
         return Move.Right
@@ -176,27 +145,3 @@ def get_move_action(start_cell, end_cell):
     if end_cell[1] - start_cell[1] == 1:
         return Move.Down
     return Move.Up
-
-
-def is_pass(start_cell, end_cell, board_info):
-    if board_info[end_cell] not in [CellType.Empty, CellType.Ladder, CellType.Pipe]:
-        return False
-
-    if board_info[start_cell] not in [CellType.Empty, CellType.Ladder, CellType.Pipe]:
-        return False
-
-    if (
-            board_info[start_cell] != CellType.Ladder
-            and end_cell == get_upper_cell(start_cell)
-    ):
-        return False
-
-    if (
-            get_lower_cell(start_cell) in board_info
-            and board_info[start_cell] in [CellType.Empty, CellType.Gold]
-            and board_info[get_lower_cell(start_cell)] in [CellType.Empty, CellType.Pipe]
-            and end_cell != get_lower_cell(start_cell)
-    ):
-        return False
-
-    return True

@@ -1,12 +1,13 @@
-import sys
-from itertools import chain
-
+import gc
 import json
 import subprocess
+import sys
 from copy import deepcopy
 from functools import wraps
+from itertools import chain
 from logging import getLogger
 from random import choice, choices
+import time
 
 from common.utils import PLAYER, GUARD, SPECTATOR, CellType, get_cell_neighbours, Move, get_lower_cell, Drill
 from game.game_board import LodeRunnerGameBoard
@@ -16,6 +17,7 @@ logger = getLogger()
 
 GOLD_CELLS_NUMBER = 30
 TICK_TIME = .5
+GUARD_DESTROY_TIMEOUT = 1
 GUARD_NAME_PREFIX = "AI_"
 DRILL_SCENARIO = [CellType.Drill, CellType.Empty, CellType.Empty, CellType.Empty,
                   CellType.Empty, CellType.Empty, CellType.PitFill4, CellType.PitFill3,
@@ -47,6 +49,7 @@ class LodeRunnerGameSession:
         self.is_started = False
         self.tick_time = TICK_TIME
         self.update_gold_cells()
+        self.guard_runner_processes = []
 
     def broadcast(self, client_types=(SPECTATOR, PLAYER, GUARD)):
         logger.debug("Broadcasting data for websocket clients ...")
@@ -92,10 +95,21 @@ class LodeRunnerGameSession:
     @admin_command_decorator
     def update_guards_number(self, number):
         number = int(number)
-        for client in self.guard_clients:
-            client.sendMessage(json.dumps({'exit': True}).encode())
+
+        if self.guard_clients:
+            for idx, client in enumerate(self.guard_clients):
+                client.sendMessage(json.dumps({'exit': True}).encode())
+
+            for process in self.guard_runner_processes:
+                process.wait(GUARD_DESTROY_TIMEOUT)
+
+            self.guard_runner_processes = []
+            gc.collect()
+
         for _ in range(number):
-            subprocess.Popen([sys.executable, 'guard_runner.py'])
+            self.guard_runner_processes.append(
+                subprocess.Popen([sys.executable, 'guard_runner.py'])
+            )
 
     def spawn_gold_cell(self):
         cell = choice(self._get_free_to_spawn_cells())

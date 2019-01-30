@@ -1,11 +1,12 @@
 from itertools import chain
+import json
 
 from copy import deepcopy
 from logging import getLogger
 from random import choice
 from typing import List
 
-from common.utils import PLAYER, CellType, get_board_info, CellGroups
+from common.utils import PLAYER, CellType, get_board_info, CellGroups, get_global_wave_age_info, get_joints_info
 
 logger = getLogger()
 
@@ -50,6 +51,7 @@ class LodeRunnerGameBoard:
         self.size = len(board_layers)
         self.initial_board_info = get_board_info(board_layers)
         self.board_info = deepcopy(self.initial_board_info)
+        # self.global_wave_age_info = self.get_global_wave_age_info()
 
     @classmethod
     def from_blocks_number(cls, blocks_number: int = BLOCKS_NUMBER):
@@ -63,6 +65,13 @@ class LodeRunnerGameBoard:
         if cell:
             self._update_board_list_by_hero(board_list=board_list, cell=cell, direction=direction)
         return board_list
+
+    def get_global_wave_age_info(self):
+        logger.info('Calculating global wave age info ...')
+        joints_info = get_joints_info(self.size, self.board_info)
+        global_wave_age_info = get_global_wave_age_info(joints_info, self.initial_board_info)
+        logger.info('Global wave age info done.')
+        return json.dumps({str(key): value for key, value in global_wave_age_info.items()})
 
     def _update_board_list_by_hero(self, board_list, cell, direction):
         player_cell_type = self.get_participant_on_cell_type(cell=cell,

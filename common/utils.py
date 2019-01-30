@@ -1,3 +1,6 @@
+from functools import partial
+from itertools import chain
+from multiprocessing import Pool, cpu_count
 from typing import Dict, Tuple, List
 
 PLAYER = 'Player'
@@ -149,3 +152,60 @@ def get_left_cell(cell):
 class Drill(CharCode):
     DrillRight = 'DrillRight'
     DrillLeft = 'DrillLeft'
+
+
+def get_global_wave_age_info(joints_info, board_info):
+    get_wave_age_info_for_joints_info = partial(get_wave_age_info, joints_info)
+    pool = Pool(cpu_count())
+    return {
+        el[0]: el[1] for el in pool.map(get_wave_age_info_for_joints_info, board_info.keys())
+    }
+
+
+def get_wave_age_info(joints_info, start_cell):
+    wave_info = {}
+    wave_age = 1
+    joints = joints_info[start_cell]
+    while joints:
+        wave_info.update({cell: wave_age for cell in joints})
+        joints = set(list(chain(*[joints_info[cell] for cell in joints])))
+        joints = joints - set(wave_info.keys())
+        wave_age += 1
+    return start_cell, wave_info
+
+
+def get_joints_info(size: int, board_info) -> Dict[Tuple[int, int], List]:
+    joints_info = {}
+    for vertical in range(size):
+        for horizontal in range(size):
+            cell = horizontal, vertical
+            cell_joints = []
+            for neighbour_cell in get_cell_neighbours(cell, board_info):
+                if is_pass(cell, neighbour_cell, board_info):
+                    cell_joints.append(neighbour_cell)
+            joints_info.update({cell: cell_joints})
+    return joints_info
+
+
+def is_pass(start_cell, end_cell, board_info):
+    if board_info[end_cell] not in [CellType.Empty, CellType.Ladder, CellType.Pipe]:
+        return False
+
+    if board_info[start_cell] not in [CellType.Empty, CellType.Ladder, CellType.Pipe]:
+        return False
+
+    if (
+            board_info[start_cell] != CellType.Ladder
+            and end_cell == get_upper_cell(start_cell)
+    ):
+        return False
+
+    if (
+            get_lower_cell(start_cell) in board_info
+            and board_info[start_cell] in [CellType.Empty, CellType.Gold]
+            and board_info[get_lower_cell(start_cell)] in [CellType.Empty, CellType.Pipe]
+            and end_cell != get_lower_cell(start_cell)
+    ):
+        return False
+
+    return True
