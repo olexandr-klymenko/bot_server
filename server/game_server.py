@@ -53,18 +53,19 @@ class BroadcastServerFactory(WebSocketServerFactory):
         self.send_admin_info()
 
     def send_admin_info(self):
-        admin_info = {
-            'guards': len(self.guard_clients),
-            'gold': len(self.game_session.game_board.gold_cells),
-            'players': [client.client_info['name'] for client in self.player_clients],
-            'size': self.game_session.game_board.blocks_number,
-            'tick': self.game_session.tick_time,
-            'is_running': self.game_session.is_running,
-            'is_paused': self.game_session.is_paused,
-            'timespan': self.game_session.session_timespan,
-            'timer': self.game_session.timer
-        }
-        self.admin_client.sendMessage(json.dumps(admin_info).encode())
+        if self.admin_client:
+            admin_info = {
+                'guards': len(self.game_session.guards),
+                'gold': len(self.game_session.game_board.gold_cells),
+                'players': [client.client_info['name'] for client in self.player_clients],
+                'size': self.game_session.game_board.blocks_number,
+                'tick': self.game_session.tick_time,
+                'is_running': self.game_session.is_running,
+                'is_paused': self.game_session.is_paused,
+                'timespan': self.game_session.session_timespan,
+                'timer': self.game_session.timer
+            }
+            self.admin_client.sendMessage(json.dumps(admin_info).encode())
 
     @property
     def guard_clients(self):

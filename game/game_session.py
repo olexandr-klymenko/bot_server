@@ -2,6 +2,7 @@ import gc
 import sys
 import time
 from itertools import chain
+from uuid import uuid4
 
 import json
 import subprocess
@@ -10,7 +11,7 @@ from functools import wraps
 from logging import getLogger
 from random import choice, choices
 
-from common.utils import PLAYER, GUARD, SPECTATOR, CellType, get_cell_neighbours, Move, get_lower_cell, Drill
+from common.utils import PLAYER, GUARD, SPECTATOR, CellType, get_cell_neighbours, Move, get_lower_cell, Drill, get_next_cell
 from game.game_board import LodeRunnerGameBoard
 from game.game_participants import get_participant
 
@@ -89,6 +90,7 @@ class LodeRunnerGameSession:
 
     def _tick(self):
         if not self.is_paused:
+            self.move_guards()
             self.process_gravity()
             self.process_drill_scenario()
             self.broadcast()
@@ -116,6 +118,18 @@ class LodeRunnerGameSession:
     def update_guards_number(self, number=DEFAULT_GUARDS_NUMBER):
         if not self.is_running:
             number = int(number)
+            for idx in range(number):
+                self.register_participant(uuid4(), f'{GUARD}-{idx}', GUARD)
+
+    def move_guards(self):
+        for guard_obj in self.guards:
+            next_cell = get_next_cell(
+                self.game_board.global_wave_age_info,
+                guard_obj.cell,
+                [player_obj.cell for player_obj in self.players],
+                self.game_board.joints_info)
+            move_action = Move.get_move_from_start_end_cells(guard_obj.cell, next_cell)
+            self.process_action(move_action, guard_obj.participant_id)
 
     @property
     def timer(self):

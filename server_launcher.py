@@ -28,6 +28,7 @@ def main():
     game_session.clients_info = game_factory.clients_info
     game_session.send_admin_info_func = game_factory.send_admin_info
     game_factory.game_session = game_session
+    game_session.update_guards_number()
     game_factory.protocol = BroadcastServerProtocol
 
     game_ws_server = loop.run_until_complete(

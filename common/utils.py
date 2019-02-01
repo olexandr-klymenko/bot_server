@@ -91,6 +91,17 @@ class Move(CharCode):
     Up = 'Up'
     Down = 'Down'
 
+    @classmethod
+    def get_move_from_start_end_cells(cls, start_cell, end_cell):
+        if end_cell == get_right_cell(start_cell):
+            return cls.Right
+        if end_cell == get_left_cell(start_cell):
+            return cls.Left
+        if end_cell == get_upper_cell(start_cell):
+            return cls.Up
+        if end_cell == get_lower_cell(start_cell):
+            return cls.Down
+
 
 class CellGroups(object):
     ct = CellType
