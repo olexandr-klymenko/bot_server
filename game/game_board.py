@@ -119,7 +119,4 @@ class LodeRunnerGameBoard:
             return False
 
 
-def get_index_from_cell(player_point, size):
-    return player_point[1] * size + player_point[0]
-
 # TODO: implement rectangular board support

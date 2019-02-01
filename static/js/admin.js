@@ -341,3 +341,4 @@ function getButtonWithImage(text, imageName) {
 main();
 
 // TODO: add images to buttons
+// TODO: merge admin and spectator page
