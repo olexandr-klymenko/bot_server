@@ -69,7 +69,7 @@ class LodeRunnerGameBoard:
     def get_global_wave_age_info(self):
         # TODO: Implement global_wave_age_info serializer/deserializer
         logger.info('Calculating global wave age info ...')
-        joints_info = get_joints_info(self.size, self.board_info)
+        joints_info = get_joints_info(self.board_info)
         global_wave_age_info = get_global_wave_age_info(joints_info, self.initial_board_info)
         logger.info('Global wave age info done.')
         return json.dumps({str(key): value for key, value in global_wave_age_info.items()})

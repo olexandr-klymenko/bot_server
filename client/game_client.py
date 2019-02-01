@@ -62,7 +62,7 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
 
             self.board_info = self.board_info or get_board_info(get_coerced_board_layers(board_layers))
 
-            self.joints_info = self.joints_info or get_joints_info(len(board_layers), self.board_info)
+            self.joints_info = self.joints_info or get_joints_info(self.board_info)
 
             self.path_finder_cls = self.path_finder_cls or path_finder_factory(self.joints_info,
                                                                                self.target_cell_types,

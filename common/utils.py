@@ -174,16 +174,14 @@ def get_wave_age_info(joints_info, start_cell):
     return start_cell, wave_info
 
 
-def get_joints_info(size: int, board_info) -> Dict[Tuple[int, int], List]:
+def get_joints_info(board_info: Dict[Tuple[int, int], str]) -> Dict[Tuple[int, int], List]:
     joints_info = {}
-    for vertical in range(size):
-        for horizontal in range(size):
-            cell = horizontal, vertical
-            cell_joints = []
-            for neighbour_cell in get_cell_neighbours(cell, board_info):
-                if is_pass(cell, neighbour_cell, board_info):
-                    cell_joints.append(neighbour_cell)
-            joints_info.update({cell: cell_joints})
+    for cell in board_info:
+        cell_joints = []
+        for neighbour_cell in get_cell_neighbours(cell, board_info):
+            if is_pass(cell, neighbour_cell, board_info):
+                cell_joints.append(neighbour_cell)
+        joints_info.update({cell: cell_joints})
     return joints_info
 
 
