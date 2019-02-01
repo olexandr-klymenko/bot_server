@@ -1,23 +1,19 @@
-import gc
-import sys
 import time
 from itertools import chain
-from uuid import uuid4
 
 import json
-import subprocess
 from copy import deepcopy
 from functools import wraps
 from logging import getLogger
-from random import choice, choices
+from random import choice
+from uuid import uuid4
 
-from common.utils import PLAYER, GUARD, SPECTATOR, CellType, get_cell_neighbours, Move, get_lower_cell, Drill, get_next_cell
+from common.utils import PLAYER, GUARD, SPECTATOR, CellType, Move, get_lower_cell, Drill, get_next_cell
 from game.game_board import LodeRunnerGameBoard
 from game.game_participants import get_participant
 
 logger = getLogger()
 
-DEFAULT_GOLD_CELLS_NUMBER = 30
 DEFAULT_GUARDS_NUMBER = 4
 TICK_TIME = .5
 DEFAULT_SESSION_TIMESPAN = 15 * 60
@@ -105,7 +101,7 @@ class LodeRunnerGameSession:
             logger.info('Game session has been ended')
 
     @admin_command_decorator
-    def update_gold_cells(self, number: int = DEFAULT_GOLD_CELLS_NUMBER):
+    def update_gold_cells(self, number: int):
         if not self.is_running:
             number = int(number)
             if number != len(self.game_board.gold_cells):
