@@ -49,10 +49,8 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
     def onMessage(self, payload, isBinary):
         if not isBinary:
             message = json.loads(payload.decode())
-            if 'exit' in message:
-                raise SystemExit
-
             if 'reset' in message:
+                logger.info('Handling board regeneration ...')
                 self.board_info = None
                 self.joints_info = None
                 self.path_finder_cls = None

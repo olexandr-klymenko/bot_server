@@ -4,6 +4,7 @@ from autobahn.asyncio.websocket import WebSocketServerFactory
 from datetime import datetime
 from functools import wraps
 from logging import getLogger
+import time
 from uuid import uuid1
 
 from common.utils import PLAYER, GUARD, SPECTATOR, ADMIN
@@ -50,6 +51,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
 
         self.admin_client = client
         logger.info(f"Registered Admin client {client.peer}")
+        time.sleep(.1)  # Workaround for handling race condition
         self.send_admin_info()
 
     def send_admin_info(self):
@@ -66,10 +68,6 @@ class BroadcastServerFactory(WebSocketServerFactory):
                 'timer': self.game_session.timer
             }
             self.admin_client.sendMessage(json.dumps(admin_info).encode())
-
-    @property
-    def guard_clients(self):
-        return [client for _, client in self.clients_info.items() if client.client_info['client_type'] == GUARD]
 
     @property
     def player_clients(self):
