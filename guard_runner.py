@@ -27,10 +27,6 @@ def main():
         except ConnectionRefusedError:
             pass
             loop.run_until_complete(asyncio.sleep(1))
-        # except Exception:
-        #     loop.stop()
-        #     loop.close()
-        #     raise
 
 
 if __name__ == '__main__':
