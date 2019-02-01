@@ -210,16 +210,15 @@ def is_pass(start_cell, end_cell, board_info):
 
 
 def get_next_cell(global_wave_age_info, start_cell, target_cells, joints_info):
-    wave_age_info = global_wave_age_info[start_cell]
-    target_candidates = [cell for cell in target_cells if cell in wave_age_info]
+    age_info = global_wave_age_info[start_cell]
+    target_candidates = [cell for cell in target_cells if cell in age_info]
     if target_candidates:
-        target_cell = min(target_candidates, key=lambda x: wave_age_info[x])
-        wave_age = wave_age_info[target_cell]
-        while wave_age > 1:
-            wave_age -= 1
-            target_cell = [
-                cell for cell in get_cell_neighbours(target_cell, global_wave_age_info.keys())
-                if
-                target_cell in joints_info[cell] and cell in wave_age_info and wave_age_info[cell] == wave_age
+        next_cell = min(target_candidates, key=lambda x: age_info[x])
+        age = age_info[next_cell]
+        while age > 1:
+            age -= 1
+            neighbours = get_cell_neighbours(next_cell, global_wave_age_info.keys())
+            next_cell = [
+                cell for cell in neighbours if next_cell in joints_info[cell] and age_info.get(cell) == age
             ][0]
-        return target_cell
+        return next_cell
