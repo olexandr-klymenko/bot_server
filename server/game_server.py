@@ -55,7 +55,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
     def send_admin_info(self):
         admin_info = {
             'guards': len(self.guard_clients),
-            'gold': len(self.game_session.gold_cells),
+            'gold': len(self.game_session.game_board.gold_cells),
             'players': [client.client_info['name'] for client in self.player_clients],
             'size': self.game_session.game_board.blocks_number,
             'tick': self.game_session.tick_time,

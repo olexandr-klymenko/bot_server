@@ -3,7 +3,7 @@ import json
 
 from copy import deepcopy
 from logging import getLogger
-from random import choice
+from random import choice, choices
 from typing import List
 
 from common.utils import PLAYER, CellType, get_board_info, CellGroups, get_global_wave_age_info, get_joints_info
@@ -29,6 +29,7 @@ VERT_FLIP_BLOCK = BOARD_BLOCK[::-1]
 HORIZ_FLIP_BLOCK = [line[::1] for line in BOARD_BLOCK]
 VERT_HORIZ_FLIP_BLOCK = [line[::-1] for line in BOARD_BLOCK[::-1]]
 BLOCKS = [BOARD_BLOCK, VERT_FLIP_BLOCK, HORIZ_FLIP_BLOCK, VERT_HORIZ_FLIP_BLOCK]
+DEFAULT_GOLD_CELLS_NUMBER = 30
 
 
 def get_generated_board(blocks_number: int) -> List[List]:
@@ -51,7 +52,16 @@ class LodeRunnerGameBoard:
         self.size = len(board_layers)
         self.initial_board_info = get_board_info(board_layers)
         self.board_info = deepcopy(self.initial_board_info)
-        # self.global_wave_age_info = self.get_global_wave_age_info()
+        self.joints_info = get_joints_info(self.initial_board_info)
+        self.global_wave_age_info = get_global_wave_age_info(self.joints_info, self.initial_board_info)
+
+    def init_gold_cells(self, number=DEFAULT_GOLD_CELLS_NUMBER):
+        gold_cells = choices(self.get_empty_cells(), k=number)
+        self.board_info.update({cell: CellType.Gold for cell in gold_cells})
+
+    @property
+    def gold_cells(self):
+        return [cell for cell in self.board_info if self.board_info[cell] == CellType.Gold]
 
     @classmethod
     def from_blocks_number(cls, blocks_number: int = BLOCKS_NUMBER):
@@ -65,14 +75,6 @@ class LodeRunnerGameBoard:
         if cell:
             self._update_board_list_by_hero(board_list=board_list, cell=cell, direction=direction)
         return board_list
-
-    def get_global_wave_age_info(self):
-        # TODO: Implement global_wave_age_info serializer/deserializer
-        logger.info('Calculating global wave age info ...')
-        joints_info = get_joints_info(self.board_info)
-        global_wave_age_info = get_global_wave_age_info(joints_info, self.initial_board_info)
-        logger.info('Global wave age info done.')
-        return json.dumps({str(key): value for key, value in global_wave_age_info.items()})
 
     def _update_board_list_by_hero(self, board_list, cell, direction):
         player_cell_type = self.get_participant_on_cell_type(cell=cell,
@@ -109,7 +111,7 @@ class LodeRunnerGameBoard:
         self.board_info[cell] = cell_type
 
     def get_empty_cells(self):
-        return [cell for cell, cell_type in self.initial_board_info.items() if cell_type == CellType.Empty]
+        return [cell for cell, cell_type in self.board_info.items() if cell_type == CellType.Empty]
 
     def _is_cell_valid(self, cell):
         try:

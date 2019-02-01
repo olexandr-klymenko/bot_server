@@ -16,7 +16,8 @@ from game.game_participants import get_participant
 
 logger = getLogger()
 
-GOLD_CELLS_NUMBER = 30
+DEFAULT_GOLD_CELLS_NUMBER = 30
+DEFAULT_GUARDS_NUMBER = 4
 TICK_TIME = .5
 DEFAULT_SESSION_TIMESPAN = 15 * 60
 GUARD_DESTROY_TIMEOUT = 1
@@ -34,14 +35,16 @@ def admin_command_decorator(func):
 
     @wraps(func)
     def wrapper(game_session, *args, **kwargs):
-        return func(game_session, *args, **kwargs)
+        func(game_session, *args, **kwargs)
+        game_session.broadcast([SPECTATOR, PLAYER])
+        game_session.send_admin_info_func()
 
     return wrapper
 
 
 class LodeRunnerGameSession:
     clients_info = None
-    send_admin_info_callback = None
+    send_admin_info_func = None
 
     def __init__(self, loop, game_board: LodeRunnerGameBoard):
         self.loop = loop
@@ -51,8 +54,6 @@ class LodeRunnerGameSession:
         self.is_paused = False
         self.is_running = False
         self.tick_time = TICK_TIME
-        self.update_gold_cells()
-        self.guard_runner_processes = []
         self.session_timespan = DEFAULT_SESSION_TIMESPAN
         self.start_time = None
 
@@ -79,65 +80,42 @@ class LodeRunnerGameSession:
     @admin_command_decorator
     def pause_resume(self):
         self.is_paused = not self.is_paused
-        self.send_admin_info_callback()
 
     @admin_command_decorator
     def set_session_timespan(self, session_timespan):
         if not self.is_running:
             self.session_timespan = int(session_timespan)
             logger.info(f'Game session timespan has been set to {session_timespan}')
-            self.send_admin_info_callback()
 
     def _tick(self):
         if not self.is_paused:
             self.process_gravity()
             self.process_drill_scenario()
             self.broadcast()
-            self.send_admin_info_callback()
+            self.send_admin_info_func()
             self.allow_participants_action()
 
         if time.time() - self.start_time < self.session_timespan and self.is_running:
             self.loop.call_later(self.tick_time, self._tick)
         else:
             self.is_running = False
-            self.send_admin_info_callback()
+            self.send_admin_info_func()
             logger.info('Game session has been ended')
 
     @admin_command_decorator
-    def update_gold_cells(self, number: int = GOLD_CELLS_NUMBER):
+    def update_gold_cells(self, number: int = DEFAULT_GOLD_CELLS_NUMBER):
         if not self.is_running:
             number = int(number)
-            if number != len(self.gold_cells):
-                if self.gold_cells:
-                    self.game_board.board_info.update({cell: CellType.Empty for cell in self.gold_cells})
+            if number != len(self.game_board.gold_cells):
+                if self.game_board.gold_cells:
+                    self.game_board.board_info.update({cell: CellType.Empty for cell in self.game_board.gold_cells})
 
-                gold_cells = choices(self._get_free_to_spawn_cells(), k=number)
-                self.game_board.board_info.update({cell: CellType.Gold for cell in gold_cells})
-                self.broadcast(client_types=(SPECTATOR,))
-
-            if self.send_admin_info_callback:
-                self.send_admin_info_callback()
+                self.game_board.init_gold_cells(number)
 
     @admin_command_decorator
-    def update_guards_number(self, number):
+    def update_guards_number(self, number=DEFAULT_GUARDS_NUMBER):
         if not self.is_running:
-            # TODO: Implement passing global wave age info to guard_runner
             number = int(number)
-
-            if self.guard_clients:
-                for idx, client in enumerate(self.guard_clients):
-                    client.sendMessage(json.dumps({'exit': True}).encode())
-
-                for process in self.guard_runner_processes:
-                    process.wait(GUARD_DESTROY_TIMEOUT)
-
-                self.guard_runner_processes = []
-                gc.collect()
-
-            for _ in range(number):
-                self.guard_runner_processes.append(
-                    subprocess.Popen([sys.executable, 'guard_runner.py'])
-                )
 
     @property
     def timer(self):
@@ -146,11 +124,11 @@ class LodeRunnerGameSession:
         return self.session_timespan
 
     def spawn_gold_cell(self):
-        cell = choice(self._get_free_to_spawn_cells())
+        cell = choice(self.game_board.get_empty_cells())
         self.game_board.board_info[cell] = CellType.Gold
 
     def register_participant(self, client_id, name, participant_type):
-        cell = choice(self._get_free_to_spawn_cells())
+        cell = choice(self.game_board.get_empty_cells())
         if self._is_participant_id_in_registry(client_id):
             participant_object = self._get_participant_object_by_id(client_id)
             participant_object.re_spawn(cell)
@@ -240,7 +218,7 @@ class LodeRunnerGameSession:
                 next_cell_type = CellType.HeroDies
 
             else:
-                if next_cell in self.gold_cells:
+                if next_cell in self.game_board.gold_cells:
                     self._process_gold_cell_pickup(player_object=participant_object, cell=next_cell)
 
                 next_cell_type = \
@@ -259,7 +237,7 @@ class LodeRunnerGameSession:
     def _process_gold_cell_pickup(self, player_object, cell):
         if player_object.get_type() == PLAYER:
             player_object.pickup_gold()
-        self.gold_cells.remove(cell)
+        self.game_board.gold_cells.remove(cell)
         logger.debug("Gold cell %s has been picked up" % str(cell))
         self.spawn_gold_cell()
 
@@ -324,20 +302,16 @@ class LodeRunnerGameSession:
                       reverse=True)
 
     @property
+    def guards(self):
+        return [p_obj for p_obj in self._participants if p_obj.get_type() == GUARD]
+
+    @property
     def players_cells(self):
         return {player_object.name: player_object.cell for player_object in self.players}
 
     @property
     def player_clients(self):
         return [client for _, client in self.clients_info.items() if client.client_info['client_type'] == PLAYER]
-
-    @property
-    def guard_clients(self):
-        return [client for _, client in self.clients_info.items() if client.client_info['client_type'] == GUARD]
-
-    @property
-    def gold_cells(self):
-        return [cell for cell in self.game_board.board_info if self.game_board.board_info[cell] == CellType.Gold]
 
     def is_player_name_in_registry(self, name):
         return name in [player_object.name for player_object in self.players]
@@ -362,19 +336,11 @@ class LodeRunnerGameSession:
         session_info['size'] = self.game_board.size
         return session_info
 
-    @admin_command_decorator
-    def info(self):
-        return AdminCommands
-
     def run_admin_command(self, func_name, func_args):
         if func_name in AdminCommands:
             func = getattr(self, func_name)
             return func(*func_args)
         return "Command is not available"
-
-    @admin_command_decorator
-    def get_board_size(self):
-        return self.game_board.size
 
     @admin_command_decorator
     def check_user_name(self, name):
@@ -399,25 +365,17 @@ class LodeRunnerGameSession:
                 logger.warning(f"Invalid blocks number '{blocks_number}'")
                 raise
             else:
-                gold_cells_number = len(self.gold_cells)
+                gold_cells_number = len(self.game_board.gold_cells)
                 self.stop()
                 self.scenarios = {}
                 self.game_board = LodeRunnerGameBoard.from_blocks_number(int(blocks_number))
-                free_cells = self._get_free_to_spawn_cells()
+                free_cells = self.game_board.get_empty_cells()
                 for participant in self._participants:
                     cell = choice(free_cells)
                     participant.set_cell(cell)
                 self.update_gold_cells(gold_cells_number)
-                for client in self.guard_clients + self.player_clients:
+                for client in self.player_clients:
                     client.sendMessage(json.dumps({'reset': True}).encode())
-                self.broadcast(client_types=[SPECTATOR])
-
-    def _get_free_to_spawn_cells(self):
-        empty_cells = self.game_board.get_empty_cells()
-        participants_cells = [participant_object.cell for participant_object in self._participants]
-        participants_neighbour_cells = list(chain.from_iterable([get_cell_neighbours(cell, self.game_board.board_info)
-                                                                 for cell in participants_cells]))
-        return list(set(empty_cells) - set(participants_cells + participants_neighbour_cells + self.gold_cells))
 
     @property
     def _participants(self):
