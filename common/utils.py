@@ -68,18 +68,18 @@ class CellType(CharCode):
     GuardOnPipeLooksRight = 'b'
 
 
-def get_cell_neighbours(cell, board_info):
+def get_cell_neighbours(cell, board_cells):
     neighbours = []
-    if get_left_cell(cell) in board_info:
+    if get_left_cell(cell) in board_cells:
         neighbours.append(get_left_cell(cell))
 
-    if get_right_cell(cell) in board_info:
+    if get_right_cell(cell) in board_cells:
         neighbours.append(get_right_cell(cell))
 
-    if get_lower_cell(cell) in board_info:
+    if get_lower_cell(cell) in board_cells:
         neighbours.append(get_lower_cell(cell))
 
-    if get_upper_cell(cell) in board_info:
+    if get_upper_cell(cell) in board_cells:
         neighbours.append(get_upper_cell(cell))
 
     return neighbours
@@ -207,3 +207,19 @@ def is_pass(start_cell, end_cell, board_info):
         return False
 
     return True
+
+
+def get_next_cell(global_wave_age_info, start_cell, target_cells, joints_info):
+    wave_age_info = global_wave_age_info[start_cell]
+    target_candidates = [cell for cell in target_cells if cell in wave_age_info]
+    if target_candidates:
+        target_cell = min(target_candidates, key=lambda x: wave_age_info[x])
+        wave_age = wave_age_info[target_cell]
+        while wave_age > 1:
+            wave_age -= 1
+            target_cell = [
+                cell for cell in get_cell_neighbours(target_cell, global_wave_age_info.keys())
+                if
+                target_cell in joints_info[cell] and cell in wave_age_info and wave_age_info[cell] == wave_age
+            ][0]
+        return target_cell

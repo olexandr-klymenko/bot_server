@@ -8,7 +8,7 @@ from autobahn.asyncio import WebSocketClientFactory
 from autobahn.asyncio.websocket import WebSocketClientProtocol
 
 from common.utils import (PLAYER, GUARD, CellType, get_board_info, get_cell_neighbours, Move, CellGroups,
-                          CELL_TYPE_COERCION, get_global_wave_age_info, get_joints_info)
+                          CELL_TYPE_COERCION, get_global_wave_age_info, get_joints_info, get_next_cell)
 
 logger = getLogger()
 
@@ -110,7 +110,7 @@ def path_finder_factory(joints_info, target_cell_types, board_info: Dict):
 
         def get_routed_move_action(self):
             if self.target_cells:
-                next_cell = self.get_next_cell()
+                next_cell = get_next_cell(global_wave_age_info, self.my_cell, self.target_cells, joints_info)
 
                 if next_cell:
                     return get_move_action(self.my_cell, next_cell)
@@ -118,21 +118,6 @@ def path_finder_factory(joints_info, target_cell_types, board_info: Dict):
                     return get_move_action(self.my_cell, choice(joints_info[self.my_cell]))
 
             return choice(Move.get_valid_codes())
-
-        def get_next_cell(self):
-            wave_age_info = global_wave_age_info[self.my_cell]
-            target_candidates = [cell for cell in self.target_cells if cell in wave_age_info]
-            if target_candidates:
-                target_cell = min(target_candidates, key=lambda x: wave_age_info[x])
-                wave_age = wave_age_info[target_cell]
-                while wave_age > 1:
-                    wave_age -= 1
-                    target_cell = [
-                        cell for cell in get_cell_neighbours(target_cell, board_info)
-                        if
-                        target_cell in joints_info[cell] and cell in wave_age_info and wave_age_info[cell] == wave_age
-                    ][0]
-                return target_cell
 
     return ClientPathFinder
 
