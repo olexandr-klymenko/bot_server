@@ -49,12 +49,6 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
     def onMessage(self, payload, isBinary):
         if not isBinary:
             message = json.loads(payload.decode())
-            if 'reset' in message:
-                logger.info('Handling board regeneration ...')
-                self.board_info = None
-                self.joints_info = None
-                self.path_finder_cls = None
-                return
 
             board_layers = message['board']
 
@@ -73,6 +67,7 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
 
     def onClose(self, wasClean, code, reason):
         logger.info(f"WebSocket connection of '{self.name}' closed: {reason}")
+        raise ConnectionRefusedError
 
     def connection_lost(self, exc):
         logger.info(f"WebSocket connection lost")

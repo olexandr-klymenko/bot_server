@@ -1,7 +1,11 @@
 from functools import partial
 from itertools import chain
+from logging import getLogger
 from multiprocessing import Pool, cpu_count
 from typing import Dict, Tuple, List
+
+
+logger = getLogger()
 
 PLAYER = 'Player'
 GUARD = 'Guard'
@@ -168,9 +172,13 @@ class Drill(CharCode):
 def get_global_wave_age_info(joints_info, board_info):
     get_wave_age_info_for_joints_info = partial(get_wave_age_info, joints_info)
     pool = Pool(cpu_count())
-    return {
+    logger.info('Start calculating global wave age info ...')
+    global_wave_age_info = {
         el[0]: el[1] for el in pool.map(get_wave_age_info_for_joints_info, board_info.keys())
     }
+    pool.close()
+    logger.info('Global wave age info has been calculated')
+    return global_wave_age_info
 
 
 def get_wave_age_info(joints_info, start_cell):

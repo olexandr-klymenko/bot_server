@@ -114,6 +114,8 @@ class LodeRunnerGameSession:
     def update_guards_number(self, number=DEFAULT_GUARDS_NUMBER):
         if not self.is_running:
             number = int(number)
+            for guard in self.guards:
+                self.unregister_participant(guard.participant_id)
             for idx in range(number):
                 self.register_participant(uuid4(), f'{GUARD}-{idx}', GUARD)
 
@@ -376,16 +378,11 @@ class LodeRunnerGameSession:
                 raise
             else:
                 gold_cells_number = len(self.game_board.gold_cells)
-                self.stop()
-                self.scenarios = {}
                 self.game_board = LodeRunnerGameBoard.from_blocks_number(int(blocks_number))
-                free_cells = self.game_board.get_empty_cells()
-                for participant in self._participants:
-                    cell = choice(free_cells)
-                    participant.set_cell(cell)
+                self.update_guards_number(len(self.guards))
                 self.update_gold_cells(gold_cells_number)
-                for client in self.player_clients:
-                    client.sendMessage(json.dumps({'reset': True}).encode())
+                for player in self.player_clients:
+                    player.sendClose()
 
     @property
     def _participants(self):
@@ -487,3 +484,4 @@ def get_modified_cell(cell, vector):
     return cell[0] + vector[0], cell[1] + vector[1]
 
 # TODO: Investigate gold number issues
+# TODO: Fix board regeneration
