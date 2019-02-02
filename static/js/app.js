@@ -112,7 +112,6 @@ function gameBoardSocketManager() {
 
     gameBoardSocket.onmessage = (event) => {
         sessionInfo = JSON.parse(event.data);
-        console.log(sessionInfo);
         if (!boardSize) {
             boardSize = sessionInfo[SIZE]
         }
@@ -162,7 +161,6 @@ function handleBoardSizeChange() {
 }
 
 function showGameBoard() {
-    setCanvasContext();
     let boardMessage = sessionInfo[BOARD];
     for (let y in boardMessage) {
         for (let x in boardMessage[y]) {
