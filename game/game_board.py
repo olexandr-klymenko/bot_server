@@ -53,14 +53,15 @@ class LodeRunnerGameBoard:
         self.board_info = deepcopy(self.initial_board_info)
         self.joints_info = get_joints_info(self.initial_board_info)
         self.global_wave_age_info = get_global_wave_age_info(self.joints_info, self.initial_board_info)
+        self.gold_cells = []
 
     def init_gold_cells(self, number=DEFAULT_GOLD_CELLS_NUMBER):
-        gold_cells = choices(self.get_empty_cells(), k=number)
-        self.board_info.update({cell: CellType.Gold for cell in gold_cells})
+        self.gold_cells = choices(self.get_empty_cells(), k=number)
+        self.board_info.update({cell: CellType.Gold for cell in self.gold_cells})
 
-    @property
-    def gold_cells(self):
-        return [cell for cell in self.board_info if self.board_info[cell] == CellType.Gold]
+    def empty_gold_cells(self):
+        while self.gold_cells:
+            self.board_info.update({self.gold_cells.pop(): CellType.Empty})
 
     @classmethod
     def from_blocks_number(cls, blocks_number: int = BLOCKS_NUMBER):

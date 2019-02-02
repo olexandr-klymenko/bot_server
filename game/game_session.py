@@ -106,7 +106,7 @@ class LodeRunnerGameSession:
             number = int(number)
             if number != len(self.game_board.gold_cells):
                 if self.game_board.gold_cells:
-                    self.game_board.board_info.update({cell: CellType.Empty for cell in self.game_board.gold_cells})
+                    self.game_board.empty_gold_cells()
 
                 self.game_board.init_gold_cells(number)
 
@@ -127,7 +127,8 @@ class LodeRunnerGameSession:
                 [player_obj.cell for player_obj in self.players],
                 self.game_board.joints_info)
             move_action = Move.get_move_from_start_end_cells(guard_obj.cell, next_cell)
-            self.process_action(move_action, guard_obj.participant_id)
+            if move_action:
+                self.process_action(move_action, guard_obj.participant_id)
 
     @property
     def timer(self):
@@ -137,6 +138,7 @@ class LodeRunnerGameSession:
 
     def spawn_gold_cell(self):
         cell = choice(self.game_board.get_empty_cells())
+        self.game_board.gold_cells.append(cell)
         self.game_board.board_info[cell] = CellType.Gold
 
     def register_participant(self, client_id, name, participant_type):
@@ -378,11 +380,17 @@ class LodeRunnerGameSession:
                 raise
             else:
                 gold_cells_number = len(self.game_board.gold_cells)
-                self.game_board = LodeRunnerGameBoard.from_blocks_number(int(blocks_number))
-                self.update_guards_number(len(self.guards))
-                self.update_gold_cells(gold_cells_number)
+                guards_number = len(self.guards)
+                self.game_board.empty_gold_cells()
+                for guard in self.guards:
+                    self.unregister_participant(guard.participant_id)
                 for player in self.player_clients:
                     player.sendClose()
+                time.sleep(.1)
+                self.game_board = LodeRunnerGameBoard.from_blocks_number(int(blocks_number))
+                for idx in range(guards_number):
+                    self.register_participant(uuid4(), f'{GUARD}-{idx}', GUARD)
+                self.game_board.init_gold_cells(gold_cells_number)
 
     @property
     def _participants(self):
@@ -483,5 +491,4 @@ def get_move_changes(move):
 def get_modified_cell(cell, vector):
     return cell[0] + vector[0], cell[1] + vector[1]
 
-# TODO: Investigate gold number issues
 # TODO: Fix board regeneration

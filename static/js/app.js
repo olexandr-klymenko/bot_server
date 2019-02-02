@@ -59,7 +59,7 @@ const cells_info = getCellsInfo();
 let boardSize;
 let canvasCtx;
 let reconnectionRetryCount;
-let boardMessage;
+let sessionInfo;
 
 
 function getCellsInfo() {
@@ -97,6 +97,8 @@ function getUrlValue(varSearch) {
 function websocketGame() {
     document.body.onresize = () => {
         showGameBoard();
+        showScores();
+        showPlayersNames();
     };
     setCanvasContext();
     setTimeout(() => {
@@ -109,15 +111,14 @@ function gameBoardSocketManager() {
     let gameBoardSocket = new WebSocket(gameBoardSocketUrl);
 
     gameBoardSocket.onmessage = (event) => {
-        let sessionInfo = JSON.parse(event.data);
+        sessionInfo = JSON.parse(event.data);
         if (!boardSize) {
             boardSize = sessionInfo[SIZE]
         }
-        boardMessage = sessionInfo[BOARD];
-        handleBoardSizeChange(sessionInfo[SIZE]);
-        showGameBoard(sessionInfo[BOARD]);
-        showScores(sessionInfo);
-        showPlayersNames(sessionInfo[PLAYERS][NAMES]);
+        handleBoardSizeChange();
+        showGameBoard();
+        showScores();
+        showPlayersNames();
     };
 
     gameBoardSocket.onclose = () => {
@@ -150,7 +151,8 @@ function setCanvasContext() {
     document.body.appendChild(canvas);
 }
 
-function handleBoardSizeChange(size) {
+function handleBoardSizeChange() {
+    let size = sessionInfo[SIZE];
     if (boardSize && size !== boardSize) {
         console.log('Game board size has been changed to ' + size.toString());
         boardSize = size;
@@ -160,6 +162,7 @@ function handleBoardSizeChange(size) {
 
 function showGameBoard() {
     setCanvasContext();
+    let boardMessage = sessionInfo[BOARD];
     for (let y in boardMessage) {
         for (let x in boardMessage[y]) {
             canvasCtx.drawImage(
@@ -177,7 +180,7 @@ function showGameBoard() {
     canvasCtx.stroke();
 }
 
-function showScores(sessionInfo) {
+function showScores() {
     let scoreMessage = sessionInfo[PLAYERS][SCORE];
     let boardSize = sessionInfo[SIZE];
     canvasCtx.clearRect(
@@ -204,7 +207,8 @@ function showScores(sessionInfo) {
     }
 }
 
-function showPlayersNames(players) {
+function showPlayersNames() {
+    let players = sessionInfo[PLAYERS][NAMES];
     for (let [playerName, value] of Object.entries(players)) {
         let x = value[0];
         let y = value[1];
@@ -240,6 +244,3 @@ function keyboardManager(game_board_socket) {
 
 
 websocketGame();
-
-// TODO: fix empty cell of players after man regenerate
-// TODO: fix guard cell as hero
