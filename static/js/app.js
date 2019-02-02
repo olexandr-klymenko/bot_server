@@ -101,6 +101,7 @@ function websocketGame() {
         keyboardManager(gameBoardSocket)
     }, WEB_SOCKET_CONNECT_TIMEOUT);
     document.body.onresize = () => {
+        setCanvasContext();
         showGameBoard();
         showScores();
         showPlayersNames();
