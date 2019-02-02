@@ -167,7 +167,7 @@ class LodeRunnerGameSession:
                 logger.info("Unknown command '%s' from client '%s'" % (action, repr(player_object)))
 
     def _is_participant_falling(self, participant_object):
-        lower_cell = get_lower_cell(participant_object.get_cell())
+        lower_cell = get_lower_cell(participant_object.cell)
         if self._can_participant_get_into_cell(participant_object=participant_object, move_action=Move.Down,
                                                next_cell=lower_cell) \
                 and self._should_participant_fall(participant_object=participant_object, lower_cell=lower_cell):
@@ -178,7 +178,7 @@ class LodeRunnerGameSession:
         if next_cell not in self.game_board.board_info:
             return False
 
-        if move_action == Move.Up and self.game_board.get_cell_type(participant_object.get_cell()) != CellType.Ladder:
+        if move_action == Move.Up and self.game_board.get_cell_type(participant_object.cell) != CellType.Ladder:
             return False
 
         if self._is_participant_in_cell(cell=next_cell, participant_type=GUARD):
@@ -198,16 +198,16 @@ class LodeRunnerGameSession:
                 and self._scenarios_info[next_cell][-1] in [CellType.Drill, CellType.DrillableBrick]:
             return False
 
-        if self._is_cell_in_scenarios(participant_object.get_cell()) and participant_object.get_type() == GUARD:
+        if self._is_cell_in_scenarios(participant_object.cell) and participant_object.get_type() == GUARD:
             return False
 
         return True
 
     def _should_participant_fall(self, participant_object, lower_cell):
-        if self.game_board.get_cell_type(participant_object.get_cell()) in [CellType.Ladder, CellType.Pipe]:
+        if self.game_board.get_cell_type(participant_object.cell) in [CellType.Ladder, CellType.Pipe]:
             return False
 
-        if self._is_cell_in_scenarios(participant_object.get_cell()) and participant_object.get_type() == GUARD:
+        if self._is_cell_in_scenarios(participant_object.cell) and participant_object.get_type() == GUARD:
             return False
 
         if self.game_board.get_cell_type(lower_cell) == CellType.Ladder:
@@ -218,7 +218,7 @@ class LodeRunnerGameSession:
     def _process_move(self, move_action, participant_object):
         logger.debug("Processing move '{move}' from '{participant}'".format(move=move_action,
                                                                             participant=participant_object.name))
-        current_cell = participant_object.get_cell()
+        current_cell = participant_object.cell
         next_cell = get_move_point_cell(current_cell, move_action)
         if move_action in [Move.Left, Move.Right]:
             participant_object.set_direction(move_action)
@@ -258,7 +258,7 @@ class LodeRunnerGameSession:
     def _process_drill(self, drill_action, player_object):
         logger.debug("Processing %s of %s" % (drill_action, vars(player_object)))
         drill_vector = get_drill_vector(drill_action)
-        cell = get_modified_cell(player_object.get_cell(), drill_vector)
+        cell = get_modified_cell(player_object.cell, drill_vector)
         if self.game_board.is_cell_drillable(cell) and not self._is_cell_in_scenarios(cell):
             self._add_scenario(cell, player_id=player_object.get_id())
         player_object.disallow_action()
@@ -396,12 +396,11 @@ class LodeRunnerGameSession:
     def _participants(self):
         return [participant_object for participant_object in self.registry.values()]
 
-    def _update_participant_board_cell(self, participant_object):
-        cell = participant_object.get_cell()
-        player_cell_type = self.game_board.get_participant_on_cell_type(cell=cell,
-                                                                        participant_type=participant_object.get_type(),
-                                                                        direction=participant_object.get_direction())
-        self.game_board.update_board(cell=cell, cell_type=player_cell_type)
+    def _update_participant_board_cell(self, participant_obj):
+        player_cell_type = self.game_board.get_participant_on_cell_type(cell=participant_obj.cell,
+                                                                        participant_type=participant_obj.get_type(),
+                                                                        direction=participant_obj.get_direction())
+        self.game_board.update_board(cell=participant_obj.cell, cell_type=player_cell_type)
 
     def unregister_participant(self, participant_id):
         participant_cell = self._get_participant_cell_by_id(participant_id)
@@ -416,7 +415,7 @@ class LodeRunnerGameSession:
     def _get_participant_cell_by_id(self, participant_id):
         if self._is_participant_id_in_registry(participant_id):
             participant_object = self._get_participant_object_by_id(participant_id)
-            return participant_object.get_cell()
+            return participant_object.cell
 
     def _get_participant_object_by_id(self, participant_id):
         if participant_id in self.registry:
@@ -424,11 +423,11 @@ class LodeRunnerGameSession:
         return ''
 
     def _is_participant_in_cell(self, cell, participant_type):
-        return cell in [participant_object.get_cell() for participant_object in self._participants
+        return cell in [participant_object.cell for participant_object in self._participants
                         if participant_object.get_type() == participant_type]
 
     def _is_anyone_in_cell(self, cell):
-        return cell in [participant_object.get_cell() for participant_object in self._participants]
+        return cell in [participant_object.cell for participant_object in self._participants]
 
     def _is_cell_in_scenarios(self, cell):
         return cell in self._scenarios_info
@@ -439,7 +438,7 @@ class LodeRunnerGameSession:
 
     def _get_participant_object_by_cell(self, cell):
         for participant_object in self._participants:
-            if participant_object.get_cell() == cell:
+            if participant_object.cell == cell:
                 return participant_object
 
     def _is_participant_id_in_registry(self, participant_id):

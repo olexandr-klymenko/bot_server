@@ -1,13 +1,13 @@
 import asyncio
+
 import json
+from autobahn.asyncio import WebSocketClientFactory
+from autobahn.asyncio.websocket import WebSocketClientProtocol
 from logging import getLogger
 from random import choice
 from typing import Dict
 
-from autobahn.asyncio import WebSocketClientFactory
-from autobahn.asyncio.websocket import WebSocketClientProtocol
-
-from common.utils import (PLAYER, GUARD, CellType, get_board_info, get_cell_neighbours, Move, CellGroups,
+from common.utils import (PLAYER, GUARD, CellType, get_board_info, Move, CellGroups,
                           CELL_TYPE_COERCION, get_global_wave_age_info, get_joints_info, get_next_cell)
 
 logger = getLogger()

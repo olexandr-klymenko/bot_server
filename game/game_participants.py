@@ -23,9 +23,6 @@ class ParticipantObject(object):
     def get_id(self):
         return self.participant_id
 
-    def get_cell(self):
-        return self.cell
-
     def get_name(self):
         return self.name
 
