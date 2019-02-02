@@ -83,7 +83,7 @@ class LodeRunnerGameBoard:
         board_list[cell[1]][cell[0]] = CellGroups.get_hero_cell_type(player_cell_type)
 
     def get_participant_on_cell_type(self, cell, participant_type, direction):
-        cell_type = self.get_cell_type(cell)
+        cell_type = self.get_initial_cell_type(cell)
         if cell_type in [CellType.Empty, CellType.DrillableBrick]:
             return getattr(CellType, '%sLooks%s' % (participant_type, direction))
 
@@ -97,14 +97,14 @@ class LodeRunnerGameBoard:
             return CellType.HeroDies
 
     def is_cell_drillable(self, cell):
-        return self._is_cell_valid(cell) and self.get_cell_type(cell) == CellType.DrillableBrick
+        return self._is_cell_valid(cell) and self.get_initial_cell_type(cell) == CellType.DrillableBrick
 
     def process_move(self, current_cell, next_cell, next_cell_type, is_cell_in_scenarios):
         if not is_cell_in_scenarios:
-            self.update_board(cell=current_cell, cell_type=self.get_cell_type(current_cell))
+            self.update_board(cell=current_cell, cell_type=self.get_initial_cell_type(current_cell))
         self.update_board(cell=next_cell, cell_type=next_cell_type)
 
-    def get_cell_type(self, cell):
+    def get_initial_cell_type(self, cell):
         return self.initial_board_info[cell]
 
     def update_board(self, cell, cell_type):
@@ -115,7 +115,7 @@ class LodeRunnerGameBoard:
 
     def _is_cell_valid(self, cell):
         try:
-            self.get_cell_type(cell)
+            self.get_initial_cell_type(cell)
             return True
         except KeyError:
             return False

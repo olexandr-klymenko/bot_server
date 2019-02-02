@@ -95,16 +95,16 @@ function getUrlValue(varSearch) {
 }
 
 function websocketGame() {
+    setCanvasContext();
+    setTimeout(() => {
+        let gameBoardSocket = gameBoardSocketManager();
+        keyboardManager(gameBoardSocket)
+    }, WEB_SOCKET_CONNECT_TIMEOUT);
     document.body.onresize = () => {
         showGameBoard();
         showScores();
         showPlayersNames();
     };
-    setCanvasContext();
-    setTimeout(() => {
-        let gameBoardSocket = gameBoardSocketManager();
-        keyboardManager(gameBoardSocket)
-    }, WEB_SOCKET_CONNECT_TIMEOUT)
 }
 
 function gameBoardSocketManager() {
@@ -112,6 +112,7 @@ function gameBoardSocketManager() {
 
     gameBoardSocket.onmessage = (event) => {
         sessionInfo = JSON.parse(event.data);
+        console.log(sessionInfo);
         if (!boardSize) {
             boardSize = sessionInfo[SIZE]
         }

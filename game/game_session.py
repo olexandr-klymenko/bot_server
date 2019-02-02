@@ -8,7 +8,7 @@ from logging import getLogger
 from random import choice
 from uuid import uuid4
 
-from common.utils import PLAYER, GUARD, SPECTATOR, CellType, Move, get_lower_cell, Drill, get_next_cell
+from common.utils import PLAYER, GUARD, SPECTATOR, CellType, Move, get_lower_cell, Drill, get_next_cell, CellGroups
 from game.game_board import LodeRunnerGameBoard
 from game.game_participants import get_participant
 
@@ -167,18 +167,20 @@ class LodeRunnerGameSession:
                 logger.info("Unknown command '%s' from client '%s'" % (action, repr(player_object)))
 
     def _is_participant_falling(self, participant_object):
-        lower_cell = get_lower_cell(participant_object.cell)
-        if self._can_participant_get_into_cell(participant_object=participant_object, move_action=Move.Down,
-                                               next_cell=lower_cell) \
-                and self._should_participant_fall(participant_object=participant_object, lower_cell=lower_cell):
-            return True
-        return False
+        lower_cell_code = self.game_board.board_info.get(get_lower_cell(participant_object.cell))
+        if lower_cell_code is None:
+            return False
+        if lower_cell_code != CellType.Pipe and lower_cell_code not in CellGroups.EmptyCellTypes:
+            return False
+        if self.game_board.initial_board_info[participant_object.cell] in [CellType.Pipe, CellType.Ladder]:
+            return False
+        return True
 
     def _can_participant_get_into_cell(self, participant_object, move_action, next_cell):
         if next_cell not in self.game_board.board_info:
             return False
 
-        if move_action == Move.Up and self.game_board.get_cell_type(participant_object.cell) != CellType.Ladder:
+        if move_action == Move.Up and self.game_board.get_initial_cell_type(participant_object.cell) != CellType.Ladder:
             return False
 
         if self._is_participant_in_cell(cell=next_cell, participant_type=GUARD):
@@ -187,30 +189,18 @@ class LodeRunnerGameSession:
         if participant_object.get_type() == PLAYER and self._is_anyone_in_cell(next_cell):
             return False
 
-        if self.game_board.get_cell_type(next_cell) == CellType.UnbreakableBrick:
+        if self.game_board.get_initial_cell_type(next_cell) == CellType.UnbreakableBrick:
             return False
 
-        if self.game_board.get_cell_type(next_cell) == CellType.DrillableBrick \
+        if self.game_board.get_initial_cell_type(next_cell) == CellType.DrillableBrick \
                 and not self._is_cell_in_scenarios(next_cell):
             return False
 
-        if self.game_board.get_cell_type(next_cell) == CellType.DrillableBrick \
+        if self.game_board.get_initial_cell_type(next_cell) == CellType.DrillableBrick \
                 and self._scenarios_info[next_cell][-1] in [CellType.Drill, CellType.DrillableBrick]:
             return False
 
         if self._is_cell_in_scenarios(participant_object.cell) and participant_object.get_type() == GUARD:
-            return False
-
-        return True
-
-    def _should_participant_fall(self, participant_object, lower_cell):
-        if self.game_board.get_cell_type(participant_object.cell) in [CellType.Ladder, CellType.Pipe]:
-            return False
-
-        if self._is_cell_in_scenarios(participant_object.cell) and participant_object.get_type() == GUARD:
-            return False
-
-        if self.game_board.get_cell_type(lower_cell) == CellType.Ladder:
             return False
 
         return True
@@ -404,7 +394,7 @@ class LodeRunnerGameSession:
 
     def unregister_participant(self, participant_id):
         participant_cell = self._get_participant_cell_by_id(participant_id)
-        participant_cell_type = self.game_board.get_cell_type(participant_cell)
+        participant_cell_type = self.game_board.get_initial_cell_type(participant_cell)
         self.game_board.update_board(participant_cell, participant_cell_type)
         participant_obj = self.registry.pop(participant_id)
         logger.info("Unregistered {participant_type} '{name}', id: {id}"

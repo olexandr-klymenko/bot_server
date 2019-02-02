@@ -90,7 +90,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
                                                    participant_type=client.client_info['client_type'])
             logger.info(f"Registered {client.client_info['client_type']} '{client.client_info['name']}',"
                         f" id: '{client_id}', client: '{client.peer}'")
-            for client in self.spectators:
+            for client in self.spectators + self.player_clients:
                 client.sendMessage(json.dumps(self.game_session.get_session_info(client_id)).encode())
 
         if self.admin_client is not None:
