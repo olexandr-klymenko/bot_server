@@ -5,7 +5,7 @@ import json
 from copy import deepcopy
 from functools import wraps
 from logging import getLogger
-from random import choice
+from random import choice, shuffle
 from uuid import uuid4
 
 from common.utils import PLAYER, GUARD, SPECTATOR, CellType, Move, get_lower_cell, Drill, get_next_cell, CellGroups
@@ -91,6 +91,7 @@ class LodeRunnerGameSession:
             self.process_drill_scenario()
             self.broadcast()
             self.send_admin_info_func()
+            shuffle(self._participants)
             self.allow_participants_action()
 
         if time.time() - self.start_time < self.session_timespan and self.is_running:
@@ -120,15 +121,26 @@ class LodeRunnerGameSession:
                 self.register_participant(uuid4(), f'{GUARD}-{idx}', GUARD)
 
     def move_guards(self):
-        for guard_obj in self.guards:
-            next_cell = get_next_cell(
+        players_cells = list(self.players_cells.values())
+        for guard_id, guard_cell in self.guards_info.items():
+            info = get_next_cell(
                 self.game_board.global_wave_age_info,
-                guard_obj.cell,
-                [player_obj.cell for player_obj in self.players],
-                self.game_board.joints_info)
-            move_action = Move.get_move_from_start_end_cells(guard_obj.cell, next_cell)
+                self.game_board.joints_info,
+                players_cells,
+                guard_cell,
+            )
+
+            if info is None:
+                continue
+
+            next_cell, player_cell, _ = info
+
+            move_action = Move.get_move_from_start_end_cells(guard_cell, next_cell)
             if move_action:
-                self.process_action(move_action, guard_obj.participant_id)
+                self.process_action(move_action, guard_id)
+            players_cells.remove(player_cell)
+            if not players_cells:
+                return
 
     @property
     def timer(self):
@@ -306,12 +318,16 @@ class LodeRunnerGameSession:
                       reverse=True)
 
     @property
+    def players_cells(self):
+        return {player_object.name: player_object.cell for player_object in self.players}
+
+    @property
     def guards(self):
         return [p_obj for p_obj in self._participants if p_obj.get_type() == GUARD]
 
     @property
-    def players_cells(self):
-        return {player_object.name: player_object.cell for player_object in self.players}
+    def guards_info(self):
+        return {g_obj.participant_id: g_obj.cell for g_obj in self._participants if g_obj.get_type() == GUARD}
 
     @property
     def player_clients(self):

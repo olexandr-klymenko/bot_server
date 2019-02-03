@@ -103,7 +103,10 @@ def path_finder_factory(joints_info, target_cell_types, board_info: Dict):
 
         def get_routed_move_action(self):
             if self.target_cells:
-                next_cell = get_next_cell(global_wave_age_info, self.my_cell, self.target_cells, joints_info)
+                next_cell, _, _ = get_next_cell(global_wave_age_info,
+                                                joints_info,
+                                                self.target_cells,
+                                                self.my_cell)
 
                 if next_cell:
                     return get_move_action(self.my_cell, next_cell)
