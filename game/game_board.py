@@ -5,7 +5,8 @@ from logging import getLogger
 from random import choice, choices
 from typing import List
 
-from common.utils import PLAYER, CellType, get_board_info, CellGroups, get_global_wave_age_info, get_joints_info
+from common.utils import (PLAYER, CellType, get_board_info, CellGroups, get_global_wave_age_info, get_joints_info,
+                          get_lower_cell)
 
 logger = getLogger()
 
@@ -56,7 +57,7 @@ class LodeRunnerGameBoard:
         self.gold_cells = []
 
     def init_gold_cells(self, number=DEFAULT_GOLD_CELLS_NUMBER):
-        self.gold_cells = choices(self.get_empty_cells(), k=number)
+        self.gold_cells = choices(self.get_empty_cells_on_bricks(), k=number)
         self.board_info.update({cell: CellType.Gold for cell in self.gold_cells})
 
     def empty_gold_cells(self):
@@ -112,6 +113,17 @@ class LodeRunnerGameBoard:
 
     def get_empty_cells(self):
         return [cell for cell, cell_type in self.board_info.items() if cell_type == CellType.Empty]
+
+    def get_empty_cells_on_bricks(self):
+        empty_on_floor = []
+        for cell, cell_type in self.initial_board_info.items():
+            if cell_type == CellType.Empty:
+                lower_cell_code = self.initial_board_info.get(get_lower_cell(cell))
+                if lower_cell_code is None:
+                    empty_on_floor.append(cell)
+                elif lower_cell_code in CellGroups.FloorCellTypes:
+                    empty_on_floor.append(cell)
+        return empty_on_floor
 
     def _is_cell_valid(self, cell):
         try:

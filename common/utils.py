@@ -117,6 +117,8 @@ class CellGroups(object):
 
     EmptyCellTypes = [ct.Empty, ct.Gold, ct.Drill, ct.PitFill1, ct.PitFill2, ct.PitFill3, ct.PitFill4]
 
+    FloorCellTypes = [ct.DrillableBrick, ct.UnbreakableBrick, ct.Ladder]
+
     @classmethod
     def get_hero_cell_type(cls, player_cell_type):
         player_hero_info = dict(zip(cls.PlayerCellTypes, cls.HeroCellTypes))

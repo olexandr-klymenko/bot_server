@@ -150,7 +150,7 @@ class LodeRunnerGameSession:
         return self.session_timespan
 
     def spawn_gold_cell(self):
-        cell = choice(self.game_board.get_empty_cells())
+        cell = choice(self.game_board.get_empty_cells_on_bricks())
         self.game_board.gold_cells.append(cell)
         self.game_board.board_info[cell] = CellType.Gold
 
