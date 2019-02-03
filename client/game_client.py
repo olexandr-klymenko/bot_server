@@ -8,7 +8,7 @@ from random import choice
 from typing import Dict
 
 from common.utils import (PLAYER, GUARD, CellType, get_board_info, Move, CellGroups,
-                          CELL_TYPE_COERCION, get_global_wave_age_info, get_joints_info, get_next_cell)
+                          CELL_TYPE_COERCION, get_global_wave_age_info, get_joints_info, get_next_target_age)
 
 logger = getLogger()
 
@@ -103,10 +103,10 @@ def path_finder_factory(joints_info, target_cell_types, board_info: Dict):
 
         def get_routed_move_action(self):
             if self.target_cells:
-                next_cell, _, _ = get_next_cell(global_wave_age_info,
-                                                joints_info,
-                                                self.target_cells,
-                                                self.my_cell)
+                next_cell, _, _ = get_next_target_age(global_wave_age_info,
+                                                      joints_info,
+                                                      self.target_cells,
+                                                      self.my_cell)
 
                 if next_cell:
                     return get_move_action(self.my_cell, next_cell)

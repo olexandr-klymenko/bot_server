@@ -230,7 +230,7 @@ def is_pass(start_cell, end_cell, board_info):
     return True
 
 
-def get_next_cell(global_wave_age_info, joints_info, target_cells, start_cell):
+def get_next_target_age(global_wave_age_info, joints_info, target_cells, start_cell):
     age_info = global_wave_age_info[start_cell]
     target_candidates = [cell for cell in target_cells if cell in age_info]
     if target_candidates:

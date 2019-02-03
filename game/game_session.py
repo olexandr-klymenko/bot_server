@@ -8,7 +8,7 @@ from logging import getLogger
 from random import choice, shuffle
 from uuid import uuid4
 
-from common.utils import PLAYER, GUARD, SPECTATOR, CellType, Move, get_lower_cell, Drill, get_next_cell, CellGroups
+from common.utils import PLAYER, GUARD, SPECTATOR, CellType, Move, get_lower_cell, Drill, get_next_target_age, CellGroups
 from game.game_board import LodeRunnerGameBoard
 from game.game_participants import get_participant
 
@@ -122,25 +122,26 @@ class LodeRunnerGameSession:
 
     def move_guards(self):
         players_cells = list(self.players_cells.values())
+        guard_player_data = []
         for guard_id, guard_cell in self.guards_info.items():
-            info = get_next_cell(
-                self.game_board.global_wave_age_info,
-                self.game_board.joints_info,
-                players_cells,
-                guard_cell,
-            )
+            for player_cell in players_cells:
+                next_target_distance = get_next_target_age(
+                    self.game_board.global_wave_age_info,
+                    self.game_board.joints_info,
+                    [player_cell],
+                    guard_cell)
+                if next_target_distance:
+                    guard_player_data.append([guard_id, guard_cell, next_target_distance])
 
-            if info is None:
-                continue
-
-            next_cell, player_cell, _ = info
-
-            move_action = Move.get_move_from_start_end_cells(guard_cell, next_cell)
-            if move_action:
+        guard_player_data = sorted(guard_player_data, key=lambda x: x[2][2])
+        selected_guard_ids = []
+        selected_players_cells = []
+        for guard_id, guard_cell, (next_cell, target_cell, distance) in guard_player_data:
+            if guard_id not in selected_guard_ids and target_cell not in selected_players_cells:
+                move_action = Move.get_move_from_start_end_cells(guard_cell, next_cell)
                 self.process_action(move_action, guard_id)
-            players_cells.remove(player_cell)
-            if not players_cells:
-                return
+                selected_guard_ids.append(guard_id)
+                selected_players_cells.append(target_cell)
 
     @property
     def timer(self):
