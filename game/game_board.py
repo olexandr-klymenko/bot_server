@@ -121,9 +121,7 @@ class LodeRunnerGameBoard:
         self, current_cell, next_cell, next_cell_type, is_cell_in_scenarios
     ):
         if not is_cell_in_scenarios:
-            self.update_board(
-                cell=current_cell, cell_type=self.get_initial_cell_type(current_cell)
-            )
+            self.restore_original_cell(current_cell)
         self.update_board(cell=next_cell, cell_type=next_cell_type)
 
     def get_initial_cell_type(self, cell):

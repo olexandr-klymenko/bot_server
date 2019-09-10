@@ -53,9 +53,10 @@ def admin_command_decorator(func):
 
     @wraps(func)
     def wrapper(game_session, *args, **kwargs):
-        func(game_session, *args, **kwargs)
+        result = func(game_session, *args, **kwargs)
         game_session.broadcast([SPECTATOR, PLAYER])
         game_session.send_admin_info_func()
+        return result
 
     return wrapper
 
