@@ -87,7 +87,7 @@ function getAdminSocket() {
         // console.log(sessionInfo);
         showPlayers(sessionInfo[PLAYERS_LIST_ID]);
         showStartStopButton(sessionInfo[IS_RUNNING]);
-        showPauseResumeButton(sessionInfo[IS_PAUSED]);
+        showPauseResumeButton(sessionInfo[IS_PAUSED], sessionInfo[IS_RUNNING]);
         document.getElementById(BOARD_SIZE_SELECT_ID).value = sessionInfo[SIZE];
         guardsNumberButton.innerText = sessionInfo[GUARDS];
         goldNumberButton.innerText = sessionInfo[GOLD];
@@ -164,7 +164,7 @@ function handleStop() {
     )
 }
 
-function showPauseResumeButton(isPaused) {
+function showPauseResumeButton(isPaused, isRunning) {
     pauseResumeButton = document.getElementById(PAUSE_RESUME_BUTTON_ID);
     if (isPaused) {
         pauseResumeButton.innerText = 'Resume Game';
@@ -176,7 +176,8 @@ function showPauseResumeButton(isPaused) {
             getCommandBody("pause_resume"),
             console.log(pauseResumeButton.innerText)
         )
-    }
+    };
+    pauseResumeButton.disabled = ! isRunning;
 }
 
 function getRegenerateBoardBlock() {

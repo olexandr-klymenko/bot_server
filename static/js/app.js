@@ -149,7 +149,16 @@ function setCanvasContext() {
     canvasCtx = canvas.getContext("2d");
     canvas.width = $(window).width() - cellSize;
     canvas.height = $(window).height() - cellSize;
+    canvas.addEventListener('click', logCoordinates, false);
     document.body.appendChild(canvas);
+}
+
+function logCoordinates(event) {
+    let x = Number((event.clientX - baselWidth) / cellSize).toFixed();
+    let y = Number((event.clientY - baselWidth + 2) / cellSize).toFixed();
+    if (x >= 1 && x <= boardSize && y >= 1 && y <= boardSize) {
+        console.log({x: x, y: y})
+    }
 }
 
 function handleBoardSizeChange() {

@@ -25,12 +25,14 @@ def factory_action_decorator(func):
 
 
 class BroadcastServerFactory(WebSocketServerFactory):
-    game_session: LodeRunnerGameSession = None
-
-    def __init__(self, url):
+    def __init__(self, url, game_session: LodeRunnerGameSession):
         super().__init__(url)
         self.clients_info = {}
         self.admin_client = None
+        self.game_session = game_session
+        self.game_session.init(
+            clients_info=self.clients_info, send_admin_info_func=self.send_admin_info
+        )
         logger.info("Lode Runner game server has been initialized")
 
     @property

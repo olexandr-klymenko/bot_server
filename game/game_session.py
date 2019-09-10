@@ -1,5 +1,6 @@
 import time
 from itertools import chain
+from typing import Callable, Dict, List, Tuple
 
 import json
 from copy import deepcopy
@@ -60,19 +61,24 @@ def admin_command_decorator(func):
 
 
 class LodeRunnerGameSession:
-    clients_info = None
-    send_admin_info_func = None
-
     def __init__(self, loop, game_board: LodeRunnerGameBoard):
         self.loop = loop
-        self.game_board = game_board
+        self.game_board: LodeRunnerGameBoard = game_board
         self.registry = {}
-        self.scenarios = {}
+        self.drill_scenarios = {}
+        self.die_cells: List[Tuple] = []
         self.is_paused = False
         self.is_running = False
         self.tick_time = TICK_TIME
         self.session_timespan = DEFAULT_SESSION_TIMESPAN
         self.start_time = None
+        self.clients_info = None
+        self.send_admin_info_func = None
+
+    def init(self, clients_info: Dict, send_admin_info_func: Callable):
+        self.clients_info = clients_info
+        self.send_admin_info_func = send_admin_info_func
+        self.update_guards_number()
 
     def broadcast(self, client_types=(SPECTATOR, PLAYER, GUARD)):
         logger.debug("Broadcasting data for websocket clients ...")
@@ -108,6 +114,7 @@ class LodeRunnerGameSession:
 
     def _tick(self):
         if not self.is_paused:
+            self.cleanup_die_cells()
             self.move_guards()
             self.process_gravity()
             self.process_drill_scenario()
@@ -142,11 +149,15 @@ class LodeRunnerGameSession:
             for idx in range(number):
                 self.register_participant(uuid4(), f"{GUARD}-{idx}", GUARD)
 
+    def cleanup_die_cells(self):
+        while self.die_cells:
+            cell = self.die_cells.pop()
+            self.game_board.restore_original_cell(cell)
+
     def move_guards(self):
-        players_cells = list(self.players_cells.values())
         guard_player_data = []
         for guard_id, guard_cell in self.guards_info.items():
-            for player_cell in players_cells:
+            for player_cell in self.players_cells.values():
                 next_target_distance = get_next_target_age(
                     self.game_board.global_wave_age_info,
                     self.game_board.joints_info,
@@ -309,6 +320,7 @@ class LodeRunnerGameSession:
                     participant_type=PLAYER,
                 )
                 next_cell_type = CellType.HeroDies
+                self.die_cells.append(next_cell)
 
             else:
                 if next_cell in self.game_board.gold_cells:
@@ -348,20 +360,20 @@ class LodeRunnerGameSession:
         if self.game_board.is_cell_drillable(cell) and not self._is_cell_in_scenarios(
             cell
         ):
-            self._add_scenario(cell, player_id=player_object.get_id())
+            self._add_drill_scenario(cell, player_id=player_object.get_id())
         player_object.disallow_action()
 
-    def _add_scenario(self, cell, player_id):
+    def _add_drill_scenario(self, cell, player_id):
         scenario = deepcopy(DRILL_SCENARIO)
         scenario.reverse()
-        if player_id in self.scenarios:
-            self.scenarios[player_id].update({cell: scenario})
+        if player_id in self.drill_scenarios:
+            self.drill_scenarios[player_id].update({cell: scenario})
         else:
-            self.scenarios.update({player_id: {cell: scenario}})
+            self.drill_scenarios.update({player_id: {cell: scenario}})
 
     def process_drill_scenario(self):
         logger.debug("Processing drill scenarios ...")
-        for player_id, player_scenarios in self.scenarios.items():
+        for player_id, player_scenarios in self.drill_scenarios.items():
             for cell, scenario in player_scenarios.items():
                 scenario_cell_type = scenario.pop()
                 if not self._is_anyone_in_cell(cell):
@@ -385,14 +397,14 @@ class LodeRunnerGameSession:
         self._delete_empty_scenarios()
 
     def _get_player_object_by_pit_cell(self, cell):
-        for player_id, player_scenarios in self.scenarios.items():
+        for player_id, player_scenarios in self.drill_scenarios.items():
             if cell in player_scenarios:
                 return self._get_participant_object_by_id(player_id)
 
     def _delete_empty_scenarios(self):
-        delete_empty_value_keys(self.scenarios)
+        delete_empty_value_keys(self.drill_scenarios)
 
-        for player_id, player_scenarios in self.scenarios.items():
+        for player_id, player_scenarios in self.drill_scenarios.items():
             delete_empty_value_keys(player_scenarios)
 
     @property
@@ -568,7 +580,7 @@ class LodeRunnerGameSession:
             chain.from_iterable(
                 [
                     player_scenarios.items()
-                    for player_scenarios in self.scenarios.values()
+                    for player_scenarios in self.drill_scenarios.values()
                 ]
             )
         )

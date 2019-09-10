@@ -20,17 +20,12 @@ def main():
 
     loop = asyncio.get_event_loop()
 
-    game_board = LodeRunnerGameBoard.from_blocks_number()
-    game_board.init_gold_cells()
-    game_session = LodeRunnerGameSession(loop, game_board)
+    game_session = get_game_session(loop)
 
     game_factory = BroadcastServerFactory(
-        url=f"{GAME_SERVER_WEB_SOCKET_URL}:{cmd_args.port}"
+        url=f"{GAME_SERVER_WEB_SOCKET_URL}:{cmd_args.port}",
+        game_session=game_session
     )
-    game_session.clients_info = game_factory.clients_info
-    game_session.send_admin_info_func = game_factory.send_admin_info
-    game_factory.game_session = game_session
-    game_session.update_guards_number()
     game_factory.protocol = BroadcastServerProtocol
 
     game_ws_server = loop.run_until_complete(
@@ -50,6 +45,12 @@ def main():
         game_ws_server.close()
         web_server.close()
         loop.close()
+
+
+def get_game_session(loop):
+    game_board = LodeRunnerGameBoard.from_blocks_number()
+    game_board.init_gold_cells()
+    return LodeRunnerGameSession(loop, game_board)
 
 
 def get_cmd_args():

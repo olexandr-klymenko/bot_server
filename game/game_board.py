@@ -132,6 +132,9 @@ class LodeRunnerGameBoard:
     def update_board(self, cell, cell_type):
         self.board_info[cell] = cell_type
 
+    def restore_original_cell(self, cell):
+        self.board_info[cell] = self.initial_board_info[cell]
+
     def get_empty_cells(self):
         return [
             cell
