@@ -7,8 +7,18 @@ from logging import getLogger
 from random import choice
 from typing import Dict
 
-from common.utils import (PLAYER, GUARD, CellType, get_board_info, Move, CellGroups,
-                          CELL_TYPE_COERCION, get_global_wave_age_info, get_joints_info, get_next_target_age)
+from common.utils import (
+    PLAYER,
+    GUARD,
+    CellType,
+    get_board_info,
+    Move,
+    CellGroups,
+    CELL_TYPE_COERCION,
+    get_global_wave_age_info,
+    get_joints_info,
+    get_next_target_age,
+)
 
 logger = getLogger()
 
@@ -17,7 +27,7 @@ class GameClientFactory(WebSocketClientFactory):
     def __init__(self, url, client_type, name):
         self.name = name
         self.client_type = client_type
-        super().__init__(f'{url}?client_type={client_type}&name={name}')
+        super().__init__(f"{url}?client_type={client_type}&name={name}")
         self.protocol = LodeRunnerClientProtocol
         self.client = None
 
@@ -30,11 +40,11 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
 
     @property
     def name(self):
-        return self.factory.params['name'][0]
+        return self.factory.params["name"][0]
 
     @property
     def client_type(self):
-        return self.factory.params['client_type'][0]
+        return self.factory.params["client_type"][0]
 
     def onConnect(self, response):
         logger.info(f"'{self.name}' has been connected to server {response.peer}")
@@ -50,15 +60,17 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
         if not isBinary:
             message = json.loads(payload.decode())
 
-            board_layers = message['board']
+            board_layers = message["board"]
 
-            self.board_info = self.board_info or get_board_info(get_coerced_board_layers(board_layers))
+            self.board_info = self.board_info or get_board_info(
+                get_coerced_board_layers(board_layers)
+            )
 
             self.joints_info = self.joints_info or get_joints_info(self.board_info)
 
-            self.path_finder_cls = self.path_finder_cls or path_finder_factory(self.joints_info,
-                                                                               self.target_cell_types,
-                                                                               self.board_info)
+            self.path_finder_cls = self.path_finder_cls or path_finder_factory(
+                self.joints_info, self.target_cell_types, self.board_info
+            )
 
             path_finder = self.path_finder_cls(board_layers)
             action = path_finder.get_routed_move_action()
@@ -77,7 +89,9 @@ class LodeRunnerClientProtocol(WebSocketClientProtocol):
 def get_coerced_board_layers(board_layers):
     coerced = []
     for board_layer in board_layers:
-        coerced.append([CELL_TYPE_COERCION.get(cell_code, cell_code) for cell_code in board_layer])
+        coerced.append(
+            [CELL_TYPE_COERCION.get(cell_code, cell_code) for cell_code in board_layer]
+        )
     return coerced
 
 
@@ -85,9 +99,10 @@ def path_finder_factory(joints_info, target_cell_types, board_info: Dict):
     global_wave_age_info = get_global_wave_age_info(joints_info, board_info)
 
     class ClientPathFinder:
-
         def __init__(self, board_layers):
-            self.my_cell, self.target_cells = self.get_my_cell_and_target_cells(board_layers)
+            self.my_cell, self.target_cells = self.get_my_cell_and_target_cells(
+                board_layers
+            )
 
         @staticmethod
         def get_my_cell_and_target_cells(board_layers):
@@ -103,15 +118,16 @@ def path_finder_factory(joints_info, target_cell_types, board_info: Dict):
 
         def get_routed_move_action(self):
             if self.target_cells:
-                next_cell, _, _ = get_next_target_age(global_wave_age_info,
-                                                      joints_info,
-                                                      self.target_cells,
-                                                      self.my_cell)
+                next_cell, _, _ = get_next_target_age(
+                    global_wave_age_info, joints_info, self.target_cells, self.my_cell
+                )
 
                 if next_cell:
                     return get_move_action(self.my_cell, next_cell)
                 elif joints_info[self.my_cell]:
-                    return get_move_action(self.my_cell, choice(joints_info[self.my_cell]))
+                    return get_move_action(
+                        self.my_cell, choice(joints_info[self.my_cell])
+                    )
 
             return choice(Move.get_valid_codes())
 

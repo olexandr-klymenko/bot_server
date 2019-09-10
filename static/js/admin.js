@@ -84,7 +84,7 @@ function getAdminSocket() {
     let adminSocket = new WebSocket(ADMIN_SOCKET_URL);
     adminSocket.onmessage = (event) => {
         let sessionInfo = JSON.parse(event.data);
-        console.log(sessionInfo);
+        // console.log(sessionInfo);
         showPlayers(sessionInfo[PLAYERS_LIST_ID]);
         showStartStopButton(sessionInfo[IS_RUNNING]);
         showPauseResumeButton(sessionInfo[IS_PAUSED]);
@@ -140,22 +140,28 @@ function showStartStopButton(isRunning) {
 
 function handleStart() {
     let startStopButton = document.getElementById(START_STOP_BUTTON_ID);
-    $.post("/admin", {"command": "start"}, () => {
-        console.log('Game has been started');
-        startStopButton.removeEventListener("click", handleStart);
-        startStopButton.addEventListener("click", handleStop);
-        startStopButton.innerText = "Stop Game"
-    })
+    sendAdminCommand(
+        getCommandBody("start"),
+        () => {
+            console.log('Game has been started');
+            startStopButton.removeEventListener("click", handleStart);
+            startStopButton.addEventListener("click", handleStop);
+            startStopButton.innerText = "Stop Game"
+        }
+    )
 }
 
 function handleStop() {
     let startStopButton = document.getElementById(START_STOP_BUTTON_ID);
-    $.post(ADMIN_URL, {"command": "stop"}, () => {
-        console.log('Game has been stopped');
-        startStopButton.removeEventListener("click", handleStop);
-        startStopButton.addEventListener("click", handleStart);
-        startStopButton.innerText = "Start Game"
-    })
+    sendAdminCommand(
+        getCommandBody("stop"),
+        () => {
+            console.log("Game has been stopped");
+            startStopButton.removeEventListener("click", handleStop);
+            startStopButton.addEventListener("click", handleStart);
+            startStopButton.innerText = "Start Game"
+        }
+    )
 }
 
 function showPauseResumeButton(isPaused) {
@@ -166,7 +172,10 @@ function showPauseResumeButton(isPaused) {
         pauseResumeButton.innerText = 'Pause Game';
     }
     pauseResumeButton.onclick = () => {
-        $.post("/admin", {"command": "pause_resume"})
+        sendAdminCommand(
+            getCommandBody("pause_resume"),
+            console.log(pauseResumeButton.innerText)
+        )
     }
 }
 
@@ -176,12 +185,13 @@ function getRegenerateBoardBlock() {
     regenerateBoardButton.id = REGENERATE_BOARD_BUTTON_ID;
     regenerateBoardButton.innerText = 'Regenerate Game Board';
     regenerateBoardButton.onclick = () => {
-        $.post(ADMIN_URL, {
-            "command": "regenerate_game_board",
-            "args": document.getElementById(BOARD_SIZE_SELECT_ID).value
-        }, () => {
-            console.log('Game board has been regenerated');
-        })
+        sendAdminCommand(
+            getCommandBody(
+                "regenerate_game_board",
+                document.getElementById(BOARD_SIZE_SELECT_ID).value
+            ),
+            console.log("Game board has been regenerated")
+        )
     };
 
     let boardSizeSelect = document.createElement('select');
@@ -202,12 +212,13 @@ function getGuardsControlBlock() {
     updateGuardsNumberButton.innerText = 'Update guards number';
 
     updateGuardsNumberButton.onclick = () => {
-        $.post(ADMIN_URL, {
-            "command": "update_guards_number",
-            "args": guardsNumberButton.innerText
-        }, () => {
-            console.log('Guards number has been updated');
-        })
+        sendAdminCommand(
+            getCommandBody(
+                "update_guards_number",
+                guardsNumberButton.innerText,
+                ),
+            console.log("Guards number has been updated")
+        )
     };
     let decreaseButton = document.createElement('button');
     decreaseButton.innerText = '-';
@@ -237,12 +248,13 @@ function getGoldControlBlock() {
     updateGoldNumberButton = document.createElement('button');
     updateGoldNumberButton.innerText = 'Update gold cells number';
     updateGoldNumberButton.onclick = () => {
-        $.post(ADMIN_URL, {
-            "command": "update_gold_cells",
-            "args": goldNumberButton.innerText
-        }, () => {
-            console.log('Gold cells have been re spawned');
-        })
+        sendAdminCommand(
+            getCommandBody(
+                "update_gold_cells",
+                goldNumberButton.innerText,
+            ),
+            console.log("Gold cells have been re spawned")
+        )
     };
     let decreaseGoldNumberButton = document.createElement('button');
     decreaseGoldNumberButton.innerText = '-';
@@ -271,12 +283,13 @@ function getTickControlBlock() {
     updateTickTimeButton = document.createElement('button');
     updateTickTimeButton.innerText = 'Update tick time, sec';
     updateTickTimeButton.onclick = () => {
-        $.post(ADMIN_URL, {
-            "command": "set_tick_time",
-            "args": parseFloat(tickTimeButton.innerText).toFixed(1)
-        }, () => {
-            console.log('Tick time has been updated');
-        })
+        sendAdminCommand(
+            getCommandBody(
+                "set_tick_time",
+                parseFloat(tickTimeButton.innerText).toFixed(1)
+            ),
+            console.log("Tick time has been updated")
+        )
     };
     let decreaseTickTimeButton = document.createElement('button');
     decreaseTickTimeButton.innerText = '-';
@@ -305,12 +318,13 @@ function getTimeSpanControlBlock() {
     let updateButton = document.createElement('button');
     updateButton.innerText = 'Update timespan, sec';
     updateButton.onclick = () => {
-        $.post(ADMIN_URL, {
-            "command": "set_session_timespan",
-            "args": parseInt(timeSpanButton.innerText)
-        }, () => {
-            console.log('Tick time has been updated');
-        })
+        sendAdminCommand(
+            getCommandBody(
+                "set_session_timespan",
+                parseInt(timeSpanButton.innerText),
+            ),
+            console.log("Timespan has been updated")
+        )
     };
     let decreaseButton = document.createElement('button');
     decreaseButton.innerText = '-';
@@ -334,6 +348,32 @@ function getTimeSpanControlBlock() {
     return rootDiv
 }
 
+function getCommandBody(command, args) {
+    return JSON.stringify({
+            "command": command,
+            "args": args
+        })
+}
+
+function sendAdminCommand(body, callback) {
+    fetch(ADMIN_URL, {
+        method: "POST",
+        mode: "cors",
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: body
+    }).then(() => {
+        if(callback !== undefined) {
+            callback()
+        }
+    }).catch(error => {
+        if(error) {
+            console.error(error)
+        }
+    })
+}
+
 function getButtonWithImage(text, imageName) {
     return text + ' <img src=' + IMAGES_ROOT + imageName + '/>'
 }
@@ -342,3 +382,5 @@ main();
 
 // TODO: add images to buttons
 // TODO: merge admin and spectator page
+// TODO: Implement classes
+// TODO: Implement ReactJS

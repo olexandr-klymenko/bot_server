@@ -31,67 +31,89 @@ class BroadcastServerFactory(WebSocketServerFactory):
         super().__init__(url)
         self.clients_info = {}
         self.admin_client = None
-        logger.info('Lode Runner game server has been initialized')
+        logger.info("Lode Runner game server has been initialized")
 
     @property
     def spectators(self):
-        return [value for key, value in self.clients_info.items() if value.client_info['client_type'] == SPECTATOR]
+        return [
+            value
+            for key, value in self.clients_info.items()
+            if value.client_info["client_type"] == SPECTATOR
+        ]
 
     @factory_action_decorator
     def register_client(self, client):
-        if client.client_info['client_type'] == ADMIN:
+        if client.client_info["client_type"] == ADMIN:
             self._register_admin_client(client)
         else:
             self._register_non_admin_client(client)
 
     def _register_admin_client(self, client):
-        if self.admin_client and client.client_info['name'] != self.admin_client.client_info['name']:
+        if (
+            self.admin_client
+            and client.client_info["name"] != self.admin_client.client_info["name"]
+        ):
             logger.warning("Admin client has been already registered")
             return
 
         self.admin_client = client
         logger.info(f"Registered Admin client {client.peer}")
-        time.sleep(.1)  # Workaround for handling race condition
+        time.sleep(0.1)  # Workaround for handling race condition
         self.send_admin_info()
 
     def send_admin_info(self):
         if self.admin_client:
             admin_info = {
-                'guards': len(self.game_session.guards),
-                'gold': len(self.game_session.game_board.gold_cells),
-                'players': [client.client_info['name'] for client in self.player_clients],
-                'size': self.game_session.game_board.blocks_number,
-                'tick': self.game_session.tick_time,
-                'is_running': self.game_session.is_running,
-                'is_paused': self.game_session.is_paused,
-                'timespan': self.game_session.session_timespan,
-                'timer': self.game_session.timer
+                "guards": len(self.game_session.guards),
+                "gold": len(self.game_session.game_board.gold_cells),
+                "players": [
+                    client.client_info["name"] for client in self.player_clients
+                ],
+                "size": self.game_session.game_board.blocks_number,
+                "tick": self.game_session.tick_time,
+                "is_running": self.game_session.is_running,
+                "is_paused": self.game_session.is_paused,
+                "timespan": self.game_session.session_timespan,
+                "timer": self.game_session.timer,
             }
             self.admin_client.sendMessage(json.dumps(admin_info).encode())
 
     @property
     def player_clients(self):
-        return [client for _, client in self.clients_info.items() if client.client_info['client_type'] == PLAYER]
+        return [
+            client
+            for _, client in self.clients_info.items()
+            if client.client_info["client_type"] == PLAYER
+        ]
 
     def _register_non_admin_client(self, client):
         client_id = uuid1()
         self.clients_info.update({client_id: client})
-        if self.game_session.is_player_name_in_registry(client.client_info['name']):
+        if self.game_session.is_player_name_in_registry(client.client_info["name"]):
             logger.error("Client with id % is already registered")
             return
 
-        if client.client_info['client_type'] == SPECTATOR:
+        if client.client_info["client_type"] == SPECTATOR:
             logger.info(f"Registered Spectator client {client.peer}, id: '{client_id}'")
-            client.sendMessage(json.dumps(self.game_session.get_session_info(client_id)).encode())
+            client.sendMessage(
+                json.dumps(self.game_session.get_session_info(client_id)).encode()
+            )
             return
 
-        if client.client_info['client_type'] in [PLAYER, GUARD]:
-            self.game_session.register_participant(client_id=client_id, name=client.client_info['name'],
-                                                   participant_type=client.client_info['client_type'])
-            logger.info(f"Registered {client.client_info['client_type']} '{client.client_info['name']}',"
-                        f" id: '{client_id}', client: '{client.peer}'")
+        if client.client_info["client_type"] in [PLAYER, GUARD]:
+            self.game_session.register_participant(
+                client_id=client_id,
+                name=client.client_info["name"],
+                participant_type=client.client_info["client_type"],
+            )
+            logger.info(
+                f"Registered {client.client_info['client_type']} '{client.client_info['name']}',"
+                f" id: '{client_id}', client: '{client.peer}'"
+            )
             for client in self.spectators + self.player_clients:
-                client.sendMessage(json.dumps(self.game_session.get_session_info(client_id)).encode())
+                client.sendMessage(
+                    json.dumps(self.game_session.get_session_info(client_id)).encode()
+                )
 
         if self.admin_client is not None:
             self.send_admin_info()
@@ -102,30 +124,40 @@ class BroadcastServerFactory(WebSocketServerFactory):
             client_id = self.get_client_id(client)
             logger.info("Unregistered client '{}' '{}'".format(client.peer, client_id))
             self.clients_info.pop(client_id)
-            if not client.client_info['client_type'] == SPECTATOR:
+            if not client.client_info["client_type"] == SPECTATOR:
                 self.game_session.unregister_participant(client_id)
                 for client in self.spectators:
-                    client.sendMessage(json.dumps(self.game_session.get_session_info(client_id)).encode())
+                    client.sendMessage(
+                        json.dumps(
+                            self.game_session.get_session_info(client_id)
+                        ).encode()
+                    )
 
                 if self.admin_client:
                     self.send_admin_info()
 
     @factory_action_decorator
     def process_message(self, client, message):
-        logger.debug("From {participant} '{name}', id: '{id}' received action '{action}'".
-                     format(participant=client.client_info['client_type'],
-                            action=message,
-                            name=client.client_info['name'],
-                            id=self.game_session.get_participant_id_by_name(client.client_info['name'])))
+        logger.debug(
+            "From {participant} '{name}', id: '{id}' received action '{action}'".format(
+                participant=client.client_info["client_type"],
+                action=message,
+                name=client.client_info["name"],
+                id=self.game_session.get_participant_id_by_name(
+                    client.client_info["name"]
+                ),
+            )
+        )
 
-        self.game_session.process_action(action=message, player_id=self.get_client_id(client))
+        self.game_session.process_action(
+            action=message, player_id=self.get_client_id(client)
+        )
 
     def get_client_id(self, client):
         return dict(zip(self.clients_info.values(), self.clients_info.keys()))[client]
 
 
 class BroadcastServerProtocol(WebSocketServerProtocol):
-
     def onOpen(self):
         self.factory.register_client(self)
 
@@ -138,11 +170,14 @@ class BroadcastServerProtocol(WebSocketServerProtocol):
 
     @property
     def client_info(self):
-        if ADMIN in self.http_request_params['client_type']:
-            return {'client_type': ADMIN, 'name': hash(self.http_headers['user-agent'])}
-        if 'name' in self.http_request_params:
-            return {'client_type': self.http_request_params['client_type'][0],
-                    'name': self.http_request_params['name'][0]}
-        return {'client_type': SPECTATOR, 'name': ''}
+        if ADMIN in self.http_request_params["client_type"]:
+            return {"client_type": ADMIN, "name": hash(self.http_headers["user-agent"])}
+        if "name" in self.http_request_params:
+            return {
+                "client_type": self.http_request_params["client_type"][0],
+                "name": self.http_request_params["name"][0],
+            }
+        return {"client_type": SPECTATOR, "name": ""}
+
 
 # TODO: Improve register/unregister clients by implementing decorator
