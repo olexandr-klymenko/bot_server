@@ -2,7 +2,7 @@ import asyncio
 
 from argparse import ArgumentParser
 
-from game.game_board import LodeRunnerGameBoard
+from game.game_board import GameBoard
 from game.game_session import LodeRunnerGameSession
 from server.game_server import BroadcastServerFactory, BroadcastServerProtocol
 from server.web_server import WebApp
@@ -48,8 +48,7 @@ def main():
 
 
 def get_game_session(loop):
-    game_board = LodeRunnerGameBoard.from_blocks_number()
-    game_board.init_gold_cells()
+    game_board = GameBoard.from_blocks_number()
     return LodeRunnerGameSession(loop, game_board)
 
 

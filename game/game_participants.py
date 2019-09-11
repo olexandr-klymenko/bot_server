@@ -1,6 +1,7 @@
 from logging import getLogger
 from random import choice
 from typing import Tuple, Dict, Type
+from uuid import UUID
 
 from common.utils import Move
 
@@ -20,7 +21,7 @@ class BaseParticipant:
         self.is_allowed_to_act = True
         self.direction = get_random_direction()
         logger.debug(
-            "Created participant '%s' object: %s" % (self.participant_type, vars(self))
+            "Created participant '%s' object: %s" % (self._participant_type, vars(self))
         )
 
     def __init_subclass__(cls, **kwargs):
@@ -28,11 +29,11 @@ class BaseParticipant:
         cls.subclasses_info[cls.__name__] = cls
 
     @classmethod
-    def get_participant(cls, participant_type: str, participant_id: str, cell: Tuple, name: str):
+    def get_participant(cls, participant_type: str, participant_id: UUID, cell: Tuple, name: str):
         return cls.subclasses_info[participant_type](participant_id, cell, name)
 
     @property
-    def participant_type(self):
+    def _participant_type(self):
         return self.__class__.__name__
 
     def get_id(self):
@@ -42,7 +43,7 @@ class BaseParticipant:
         return self.name
 
     def get_type(self):
-        return self.participant_type
+        return self._participant_type
 
     def move(self, next_cell):
         self.cell = next_cell

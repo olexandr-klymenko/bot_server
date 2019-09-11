@@ -13,8 +13,8 @@ SPECTATOR = "Spectator"
 ADMIN = "Admin"
 
 
-def get_board_info(board_layers: List[List]) -> Dict[Tuple[int, int], str]:
-    board_info = {}
+def get_board_info(board_layers: List[str]) -> Dict[Tuple[int, int], str]:
+    board_info: Dict[Tuple[int, int], str] = {}
     for y_coord, line in enumerate(board_layers):
         for x_coord, cell_code in enumerate(line):
             if CellType.is_code_valid(cell_code):

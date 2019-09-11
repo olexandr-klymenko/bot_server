@@ -16,7 +16,7 @@ from common.utils import (
 
 logger = getLogger()
 
-BOARD_BLOCK = [
+BOARD_BLOCK: List[str] = [
     # 123456789
     "     H=HH",  # 1
     "=H---H H ",  # 2
@@ -38,25 +38,10 @@ BLOCKS = [BOARD_BLOCK, VERT_FLIP_BLOCK, HORIZ_FLIP_BLOCK, VERT_HORIZ_FLIP_BLOCK]
 DEFAULT_GOLD_CELLS_NUMBER = 30
 
 
-def get_generated_board(blocks_number: int) -> List[List]:
-    board_blocks = []
-    for vert_idx in range(blocks_number):
-        current_layer_blocks = [choice(BLOCKS) for _ in range(blocks_number)]
-        board_blocks.extend(_get_concatenated_blocks_layer(current_layer_blocks))
-    return board_blocks
-
-
-def _get_concatenated_blocks_layer(layer_blocks) -> List:
-    return [
-        "".join(chain.from_iterable([list(block[line]) for block in layer_blocks]))
-        for line in range(BLOCK_SIZE)
-    ]
-
-
-class LodeRunnerGameBoard:
+class GameBoard:
     blocks_number = BLOCKS_NUMBER
 
-    def __init__(self, board_layers: List[List]):
+    def __init__(self, board_layers: List[str]):
         self.size = len(board_layers)
         self._initial_board_info = get_board_info(board_layers)
         self._board_info = deepcopy(self._initial_board_info)
@@ -65,6 +50,7 @@ class LodeRunnerGameBoard:
             self.joints_info, self._initial_board_info
         )
         self.gold_cells = []
+        self.init_gold_cells()
 
     def init_gold_cells(self, number=DEFAULT_GOLD_CELLS_NUMBER):
         for _ in range(number):
@@ -82,7 +68,18 @@ class LodeRunnerGameBoard:
     @classmethod
     def from_blocks_number(cls, blocks_number: int = BLOCKS_NUMBER):
         cls.blocks_number = blocks_number
-        return cls(get_generated_board(blocks_number))
+        board_blocks: List[str] = []
+        for vert_idx in range(blocks_number):
+            current_layer_blocks = [choice(BLOCKS) for _ in range(blocks_number)]
+            board_blocks.extend(cls._get_concatenated_blocks_layer(current_layer_blocks))
+        return cls(board_blocks)
+
+    @staticmethod
+    def _get_concatenated_blocks_layer(layer_blocks: List[List]) -> List[str]:
+        return [
+            "".join(chain.from_iterable([list(block[line]) for block in layer_blocks]))
+            for line in range(BLOCK_SIZE)
+        ]
 
     def get_board_layers(self, cell, direction):
         board_list = []
