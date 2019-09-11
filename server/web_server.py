@@ -3,6 +3,7 @@ from logging import getLogger
 from os import getcwd
 from os.path import join
 from traceback import format_exc
+from typing import Callable
 
 import aiohttp_jinja2
 import jinja2
@@ -14,9 +15,9 @@ logger = getLogger()
 
 
 class WebApp(Application):
-    def __init__(self, loop, game_session):
+    def __init__(self, loop, admin_command_func: Callable):
         super().__init__(loop=loop)
-        self.game_session = game_session
+        self._admin_command_func = admin_command_func
 
         html_resource = self.router.add_resource("/")
         html_resource.add_route("GET", self.reg)
@@ -56,7 +57,7 @@ class WebApp(Application):
             if func_args:
                 func_args = [func_args]
 
-            result = self.game_session.run_admin_command(func_name, func_args)
+            result = self._admin_command_func(func_name, func_args)
             return Response(text=str(result))
         except Exception as err:
             logger.error(str(format_exc()))

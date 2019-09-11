@@ -1,5 +1,4 @@
 import asyncio
-
 from argparse import ArgumentParser
 
 from game.game_board import GameBoard
@@ -23,8 +22,7 @@ def main():
     game_session = get_game_session(loop)
 
     game_factory = BroadcastServerFactory(
-        url=f"{GAME_SERVER_WEB_SOCKET_URL}:{cmd_args.port}",
-        game_session=game_session
+        url=f"{GAME_SERVER_WEB_SOCKET_URL}:{cmd_args.port}", game_session=game_session
     )
     game_factory.protocol = BroadcastServerProtocol
 
@@ -32,7 +30,7 @@ def main():
         loop.create_server(game_factory, "0.0.0.0", cmd_args.port)
     )
 
-    web_app = WebApp(loop, game_session)
+    web_app = WebApp(loop, game_session.run_admin_command)
     web_server = loop.run_until_complete(
         loop.create_server(web_app.make_handler(), "0.0.0.0", FRONTEND_PORT)
     )
@@ -69,6 +67,5 @@ def get_cmd_args():
 
 if __name__ == "__main__":
     main()
-
 
 # TODO: Add docker support

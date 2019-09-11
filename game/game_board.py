@@ -142,13 +142,12 @@ class GameBoard:
 
     def get_empty_cells_on_bricks(self):
         empty_on_floor = []
-        for cell, cell_type in self._initial_board_info.items():
-            if cell_type == CellType.Empty:
-                lower_cell_code = self._initial_board_info.get(get_lower_cell(cell))
-                if lower_cell_code is None:
-                    empty_on_floor.append(cell)
-                elif lower_cell_code in CellGroups.FloorCellTypes:
-                    empty_on_floor.append(cell)
+        for cell in self.get_empty_cells():
+            lower_cell_code = self._initial_board_info.get(get_lower_cell(cell))
+            if lower_cell_code is None:
+                empty_on_floor.append(cell)
+            elif lower_cell_code in CellGroups.FloorCellTypes:
+                empty_on_floor.append(cell)
         return empty_on_floor
 
     def is_cell_valid(self, cell):

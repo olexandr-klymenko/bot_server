@@ -1,3 +1,3 @@
-aiohttp
-aiohttp_jinja2
-autobahn
+aiohttp==3.6.0
+aiohttp-jinja2==1.1.2
+autobahn==19.9.3
