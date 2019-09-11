@@ -1,8 +1,7 @@
-from itertools import chain
-
 from copy import deepcopy
+from itertools import chain
 from logging import getLogger
-from random import choice, choices
+from random import choice
 from typing import List
 
 from common.utils import (
@@ -58,23 +57,27 @@ class LodeRunnerGameBoard:
     blocks_number = BLOCKS_NUMBER
 
     def __init__(self, board_layers: List[List]):
-        self.board_layers = board_layers
         self.size = len(board_layers)
-        self.initial_board_info = get_board_info(board_layers)
-        self.board_info = deepcopy(self.initial_board_info)
-        self.joints_info = get_joints_info(self.initial_board_info)
+        self._initial_board_info = get_board_info(board_layers)
+        self._board_info = deepcopy(self._initial_board_info)
+        self.joints_info = get_joints_info(self._initial_board_info)
         self.global_wave_age_info = get_global_wave_age_info(
-            self.joints_info, self.initial_board_info
+            self.joints_info, self._initial_board_info
         )
         self.gold_cells = []
 
     def init_gold_cells(self, number=DEFAULT_GOLD_CELLS_NUMBER):
-        self.gold_cells = choices(self.get_empty_cells_on_bricks(), k=number)
-        self.board_info.update({cell: CellType.Gold for cell in self.gold_cells})
+        for _ in range(number):
+            self.spawn_gold_cell()
+
+    def spawn_gold_cell(self):
+        cell = choice(self.get_empty_cells_on_bricks())
+        self.gold_cells.append(cell)
+        self._board_info[cell] = CellType.Gold
 
     def empty_gold_cells(self):
         while self.gold_cells:
-            self.board_info.update({self.gold_cells.pop(): CellType.Empty})
+            self._board_info.update({self.gold_cells.pop(): CellType.Empty})
 
     @classmethod
     def from_blocks_number(cls, blocks_number: int = BLOCKS_NUMBER):
@@ -84,7 +87,7 @@ class LodeRunnerGameBoard:
     def get_board_layers(self, cell, direction):
         board_list = []
         for y in range(self.size):
-            board_list.append([self.board_info[(x, y)] for x in range(self.size)])
+            board_list.append([self._board_info[(x, y)] for x in range(self.size)])
         if cell:
             self._update_board_list_by_hero(
                 board_list=board_list, cell=cell, direction=direction
@@ -113,7 +116,7 @@ class LodeRunnerGameBoard:
 
     def is_cell_drillable(self, cell):
         return (
-            self._is_cell_valid(cell)
+            self.is_cell_valid(cell)
             and self.get_initial_cell_type(cell) == CellType.DrillableBrick
         )
 
@@ -125,38 +128,47 @@ class LodeRunnerGameBoard:
         self.update_board(cell=next_cell, cell_type=next_cell_type)
 
     def get_initial_cell_type(self, cell):
-        return self.initial_board_info[cell]
+        return self._initial_board_info[cell]
 
     def update_board(self, cell, cell_type):
-        self.board_info[cell] = cell_type
+        self._board_info[cell] = cell_type
 
     def restore_original_cell(self, cell):
-        self.board_info[cell] = self.initial_board_info[cell]
+        self._board_info[cell] = self._initial_board_info[cell]
 
     def get_empty_cells(self):
         return [
             cell
-            for cell, cell_type in self.board_info.items()
+            for cell, cell_type in self._board_info.items()
             if cell_type == CellType.Empty
         ]
 
     def get_empty_cells_on_bricks(self):
         empty_on_floor = []
-        for cell, cell_type in self.initial_board_info.items():
+        for cell, cell_type in self._initial_board_info.items():
             if cell_type == CellType.Empty:
-                lower_cell_code = self.initial_board_info.get(get_lower_cell(cell))
+                lower_cell_code = self._initial_board_info.get(get_lower_cell(cell))
                 if lower_cell_code is None:
                     empty_on_floor.append(cell)
                 elif lower_cell_code in CellGroups.FloorCellTypes:
                     empty_on_floor.append(cell)
         return empty_on_floor
 
-    def _is_cell_valid(self, cell):
-        try:
-            self.get_initial_cell_type(cell)
-            return True
-        except KeyError:
+    def is_cell_valid(self, cell):
+        return cell in self._initial_board_info
+
+    def can_fall_from_here(self, cell):
+        lower_cell_code = self._board_info.get(get_lower_cell(cell))
+        if lower_cell_code is None:
             return False
+        if (
+            lower_cell_code != CellType.Pipe
+            and lower_cell_code not in CellGroups.EmptyCellTypes
+        ):
+            return False
+        if self._initial_board_info[cell] in [CellType.Pipe, CellType.Ladder]:
+            return False
+        return True
 
 
 # TODO: implement rectangular board support

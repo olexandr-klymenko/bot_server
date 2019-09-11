@@ -1,12 +1,11 @@
-import time
-from itertools import chain
-from typing import Callable, Dict, List, Tuple
-
 import json
+import time
 from copy import deepcopy
 from functools import wraps
+from itertools import chain
 from logging import getLogger
 from random import choice, shuffle
+from typing import Callable, Dict, List, Tuple
 from uuid import uuid4
 
 from common.utils import (
@@ -15,13 +14,11 @@ from common.utils import (
     SPECTATOR,
     CellType,
     Move,
-    get_lower_cell,
     Drill,
     get_next_target_age,
-    CellGroups,
 )
 from game.game_board import LodeRunnerGameBoard
-from game.game_participants import get_participant
+from game.game_participants import BaseParticipant, Guard
 
 logger = getLogger()
 
@@ -136,38 +133,39 @@ class LodeRunnerGameSession:
         if not self.is_running:
             number = int(number)
             if number != len(self.game_board.gold_cells):
-                if self.game_board.gold_cells:
-                    self.game_board.empty_gold_cells()
-
+                self.game_board.empty_gold_cells()
                 self.game_board.init_gold_cells(number)
 
     @admin_command_decorator
     def update_guards_number(self, number=DEFAULT_GUARDS_NUMBER):
         if not self.is_running:
             number = int(number)
-            for guard in self.guards:
-                self.unregister_participant(guard.participant_id)
+            for guard_obj in self.guards:
+                self.unregister_participant(guard_obj.get_id())
             for idx in range(number):
                 self.register_participant(uuid4(), f"{GUARD}-{idx}", GUARD)
 
     def cleanup_die_cells(self):
         while self.die_cells:
             cell = self.die_cells.pop()
-            self.game_board.restore_original_cell(cell)
+            if not self._is_anyone_in_cell(cell):
+                self.game_board.restore_original_cell(cell)
+            else:
+                self._update_participant_board_cell(self._get_participant_object_by_cell(cell))
 
     def move_guards(self):
         guard_player_data = []
-        for guard_id, guard_cell in self.guards_info.items():
+        for guard_obj in self.guards:
             for player_cell in self.players_cells.values():
                 next_target_distance = get_next_target_age(
                     self.game_board.global_wave_age_info,
                     self.game_board.joints_info,
                     [player_cell],
-                    guard_cell,
+                    guard_obj.cell,
                 )
                 if next_target_distance:
                     guard_player_data.append(
-                        [guard_id, guard_cell, next_target_distance]
+                        [guard_obj.get_id(), guard_obj.cell, next_target_distance]
                     )
 
         guard_player_data = sorted(guard_player_data, key=lambda x: x[2][2])
@@ -193,20 +191,15 @@ class LodeRunnerGameSession:
             return int(self.session_timespan - (time.time() - self.start_time))
         return self.session_timespan
 
-    def spawn_gold_cell(self):
-        cell = choice(self.game_board.get_empty_cells_on_bricks())
-        self.game_board.gold_cells.append(cell)
-        self.game_board.board_info[cell] = CellType.Gold
-
-    def register_participant(self, client_id, name, participant_type):
+    def register_participant(self, client_id: str, name: str, participant_type: str):
         cell = choice(self.game_board.get_empty_cells())
         if self._is_participant_id_in_registry(client_id):
             participant_object = self._get_participant_object_by_id(client_id)
             participant_object.re_spawn(cell)
         else:
-            participant_object = get_participant(
-                participant_id=client_id,
+            participant_object = BaseParticipant.get_participant(
                 participant_type=participant_type,
+                participant_id=client_id,
                 cell=cell,
                 name=name,
             )
@@ -218,7 +211,7 @@ class LodeRunnerGameSession:
     def process_action(self, action, player_id):
         player_object = self._get_participant_object_by_id(player_id)
         if (
-            not self._is_participant_falling(participant_object=player_object)
+            not self.game_board.can_fall_from_here(player_object.cell)
             and player_object.is_allowed_to_act
         ):
             if Move.is_code_valid(action):
@@ -231,73 +224,7 @@ class LodeRunnerGameSession:
                     % (action, repr(player_object))
                 )
 
-    def _is_participant_falling(self, participant_object):
-        lower_cell_code = self.game_board.board_info.get(
-            get_lower_cell(participant_object.cell)
-        )
-        if lower_cell_code is None:
-            return False
-        if (
-            lower_cell_code != CellType.Pipe
-            and lower_cell_code not in CellGroups.EmptyCellTypes
-        ):
-            return False
-        if self.game_board.initial_board_info[participant_object.cell] in [
-            CellType.Pipe,
-            CellType.Ladder,
-        ]:
-            return False
-        return True
-
-    def _can_participant_get_into_cell(
-        self, participant_object, move_action, next_cell
-    ):
-        if next_cell not in self.game_board.board_info:
-            return False
-
-        if (
-            move_action == Move.Up
-            and self.game_board.get_initial_cell_type(participant_object.cell)
-            != CellType.Ladder
-        ):
-            return False
-
-        if self._is_participant_in_cell(cell=next_cell, participant_type=GUARD):
-            return False
-
-        if participant_object.get_type() == PLAYER and self._is_anyone_in_cell(
-            next_cell
-        ):
-            return False
-
-        if (
-            self.game_board.get_initial_cell_type(next_cell)
-            == CellType.UnbreakableBrick
-        ):
-            return False
-
-        if self.game_board.get_initial_cell_type(
-            next_cell
-        ) == CellType.DrillableBrick and not self._is_cell_in_scenarios(next_cell):
-            return False
-
-        if self.game_board.get_initial_cell_type(
-            next_cell
-        ) == CellType.DrillableBrick and self._scenarios_info[next_cell][-1] in [
-            CellType.Drill,
-            CellType.DrillableBrick,
-        ]:
-            return False
-
-        if (
-            self._is_cell_in_scenarios(participant_object.cell)
-            and participant_object.get_type() == GUARD
-        ):
-            return False
-
-        return True
-
-    def _process_move(self, move_action, participant_object):
+    def _process_move(self, move_action, participant_object: BaseParticipant):
         logger.debug(
             "Processing move '{move}' from '{participant}'".format(
                 move=move_action, participant=participant_object.name
@@ -347,12 +274,60 @@ class LodeRunnerGameSession:
 
         participant_object.disallow_action()
 
+    def _can_participant_get_into_cell(
+        self, participant_object, move_action, next_cell
+    ):
+        if not self.game_board.is_cell_valid(participant_object.cell):
+            return False
+
+        if (
+            move_action == Move.Up
+            and self.game_board.get_initial_cell_type(participant_object.cell)
+            != CellType.Ladder
+        ):
+            return False
+
+        if self._is_participant_in_cell(cell=next_cell, participant_type=GUARD):
+            return False
+
+        if participant_object.get_type() == PLAYER and self._is_anyone_in_cell(
+            next_cell
+        ):
+            return False
+
+        if (
+            self.game_board.get_initial_cell_type(next_cell)
+            == CellType.UnbreakableBrick
+        ):
+            return False
+
+        if self.game_board.get_initial_cell_type(
+            next_cell
+        ) == CellType.DrillableBrick and not self._is_cell_in_scenarios(next_cell):
+            return False
+
+        if self.game_board.get_initial_cell_type(
+            next_cell
+        ) == CellType.DrillableBrick and self._scenarios_info[next_cell][-1] in [
+            CellType.Drill,
+            CellType.DrillableBrick,
+        ]:
+            return False
+
+        if (
+            self._is_cell_in_scenarios(participant_object.cell)
+            and participant_object.get_type() == GUARD
+        ):
+            return False
+
+        return True
+
     def _process_gold_cell_pickup(self, player_object, cell):
         if player_object.get_type() == PLAYER:
             player_object.pickup_gold()
         self.game_board.gold_cells.remove(cell)
         logger.debug("Gold cell %s has been picked up" % str(cell))
-        self.spawn_gold_cell()
+        self.game_board.spawn_gold_cell()
 
     def _process_drill(self, drill_action, player_object):
         logger.debug("Processing %s of %s" % (drill_action, vars(player_object)))
@@ -430,16 +405,8 @@ class LodeRunnerGameSession:
         }
 
     @property
-    def guards(self):
+    def guards(self) -> List[Guard]:
         return [p_obj for p_obj in self._participants if p_obj.get_type() == GUARD]
-
-    @property
-    def guards_info(self):
-        return {
-            g_obj.participant_id: g_obj.cell
-            for g_obj in self._participants
-            if g_obj.get_type() == GUARD
-        }
 
     @property
     def player_clients(self):
@@ -455,7 +422,7 @@ class LodeRunnerGameSession:
     def process_gravity(self):
         logger.debug("Processing Gravity ...")
         for participants_object in self._participants:
-            if self._is_participant_falling(participants_object):
+            if self.game_board.can_fall_from_here(participants_object.cell):
                 self._process_move(
                     move_action=Move.Down, participant_object=participants_object
                 )
@@ -511,8 +478,8 @@ class LodeRunnerGameSession:
                 gold_cells_number = len(self.game_board.gold_cells)
                 guards_number = len(self.guards)
                 self.game_board.empty_gold_cells()
-                for guard in self.guards:
-                    self.unregister_participant(guard.participant_id)
+                for guard_obj in self.guards:
+                    self.unregister_participant(guard_obj.get_id())
                 for player in self.player_clients:
                     player.sendClose()
                 time.sleep(0.1)
@@ -539,8 +506,7 @@ class LodeRunnerGameSession:
 
     def unregister_participant(self, participant_id):
         participant_cell = self._get_participant_cell_by_id(participant_id)
-        participant_cell_type = self.game_board.get_initial_cell_type(participant_cell)
-        self.game_board.update_board(participant_cell, participant_cell_type)
+        self.game_board.restore_original_cell(participant_cell)
         participant_obj = self.registry.pop(participant_id)
         logger.info(
             "Unregistered {participant_type} '{name}', id: {id}".format(
@@ -586,7 +552,7 @@ class LodeRunnerGameSession:
             )
         )
 
-    def _get_participant_object_by_cell(self, cell):
+    def _get_participant_object_by_cell(self, cell) -> BaseParticipant:
         for participant_object in self._participants:
             if participant_object.cell == cell:
                 return participant_object
@@ -642,3 +608,4 @@ def get_modified_cell(cell, vector):
 
 
 # TODO: Fix board regeneration
+# TODO: unify logic of getting into cell

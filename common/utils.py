@@ -230,29 +230,29 @@ def get_joints_info(
     for cell in board_info:
         cell_joints = []
         for neighbour_cell in get_cell_neighbours(cell, board_info):
-            if is_pass(cell, neighbour_cell, board_info):
+            if is_joint(cell, neighbour_cell, board_info):
                 cell_joints.append(neighbour_cell)
         joints_info.update({cell: cell_joints})
     return joints_info
 
 
-def is_pass(start_cell, end_cell, board_info):
-    if board_info[end_cell] not in [CellType.Empty, CellType.Ladder, CellType.Pipe]:
+def is_joint(current_cell, next_cell, board_info):
+    if board_info[next_cell] not in [CellType.Empty, CellType.Ladder, CellType.Pipe]:
         return False
 
-    if board_info[start_cell] not in [CellType.Empty, CellType.Ladder, CellType.Pipe]:
+    if board_info[current_cell] not in [CellType.Empty, CellType.Ladder, CellType.Pipe]:
         return False
 
-    if board_info[start_cell] != CellType.Ladder and end_cell == get_upper_cell(
-        start_cell
+    if board_info[current_cell] != CellType.Ladder and next_cell == get_upper_cell(
+        current_cell
     ):
         return False
 
     if (
-        get_lower_cell(start_cell) in board_info
-        and board_info[start_cell] in [CellType.Empty, CellType.Gold]
-        and board_info[get_lower_cell(start_cell)] in [CellType.Empty, CellType.Pipe]
-        and end_cell != get_lower_cell(start_cell)
+        get_lower_cell(current_cell) in board_info
+        and board_info[current_cell] in [CellType.Empty, CellType.Gold]
+        and board_info[get_lower_cell(current_cell)] in [CellType.Empty, CellType.Pipe]
+        and next_cell != get_lower_cell(current_cell)
     ):
         return False
 
