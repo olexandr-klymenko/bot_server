@@ -14,103 +14,16 @@ const TIMER = 'timer';
 const DEFAULT_RECONNECTION_RETRY_COUNT = 10;
 const RECONNECTION_RETRY_TIMEOUT = 1000;
 const PLAYERS_LIST_ID = 'players';
-const START_STOP_BUTTON_ID = 'startStopButton';
-const PAUSE_RESUME_BUTTON_ID = 'pauseResumeButton';
-const TIMER_BUTTON_ID = 'timerButton';
-const REGENERATE_BOARD_BUTTON_ID = 'regenerateBoardButton';
-const BOARD_SIZE_SELECT_ID = 'boardSizeSelect';
 const ROOT_NODE_ID = 'rootNode';
-const BOARD_BLOCKS_NUMBERS = [1, 2, 3, 4, 5];
 const IMAGES_ROOT = "static/images/";
 
-let adminSocket;
 let reconnectionRetryCount;
-let playersList;
-let startStopButton;
-let pauseResumeButton;
-let timeSpanControlBlock;
-let regenerateBoardBlock;
-let guardsControlBlock;
-let guardsNumberButton;
-let updateGuardsNumberButton;
-let goldControlBlock;
-let goldNumberButton;
-let updateGoldNumberButton;
-let tickControlBlock;
-let tickTimeButton;
-let timeSpanButton;
-let timerButton;
-let updateTickTimeButton;
-let rootNode;
 
 
 function main() {
-    rootNode = document.createElement("div");
-    rootNode.id = ROOT_NODE_ID;
-    document.body.appendChild(rootNode);
-
-    playersList = document.createElement("ul");
-    playersList.id = PLAYERS_LIST_ID;
-
-    startStopButton = document.createElement('button');
-    startStopButton.id = START_STOP_BUTTON_ID;
-
-    pauseResumeButton = document.createElement('button');
-    pauseResumeButton.id = PAUSE_RESUME_BUTTON_ID;
-    timerButton = document.createElement('button');
-    timerButton.id = TIMER_BUTTON_ID;
-
-    timeSpanControlBlock = getTimeSpanControlBlock();
-    regenerateBoardBlock = getRegenerateBoardBlock();
-    guardsControlBlock = getGuardsControlBlock();
-    goldControlBlock = getGoldControlBlock();
-    tickControlBlock = getTickControlBlock();
-
-    rootNode.appendChild(startStopButton);
-    rootNode.appendChild(pauseResumeButton);
-    rootNode.appendChild(timerButton);
-    rootNode.appendChild(timeSpanControlBlock);
-
-    rootNode.appendChild(regenerateBoardBlock);
-    rootNode.appendChild(guardsControlBlock);
-    rootNode.appendChild(goldControlBlock);
-    rootNode.appendChild(tickControlBlock);
-    rootNode.appendChild(playersList);
-
-    adminSocket = getAdminSocket();
-}
-
-function getAdminSocket() {
-    let adminSocket = new WebSocket(ADMIN_SOCKET_URL);
-    adminSocket.onmessage = (event) => {
-        let sessionInfo = JSON.parse(event.data);
-        // console.log(sessionInfo);
-        showPlayers(sessionInfo[PLAYERS_LIST_ID]);
-        showStartStopButton(sessionInfo[IS_RUNNING]);
-        showPauseResumeButton(sessionInfo[IS_PAUSED], sessionInfo[IS_RUNNING]);
-        document.getElementById(BOARD_SIZE_SELECT_ID).value = sessionInfo[SIZE];
-        guardsNumberButton.innerText = sessionInfo[GUARDS];
-        goldNumberButton.innerText = sessionInfo[GOLD];
-        tickTimeButton.innerText = sessionInfo[TICK];
-        timeSpanButton.innerText = sessionInfo[TIMESPAN];
-        timerButton.innerText = sessionInfo[TIMER]
-    };
-    adminSocket.onclose = () => {
-        console.log('Connection with game server has been dropped');
-        $('#' + ROOT_NODE_ID + ' *').attr('disabled', true);
-        reconnectionRetryCount--;
-        if (reconnectionRetryCount > 0) {
-            setTimeout(getAdminSocket, RECONNECTION_RETRY_TIMEOUT)
-        } else {
-            console.log("Couldn't establish connection. Giving up");
-        }
-    };
-    adminSocket.onopen = () => {
-        reconnectionRetryCount = DEFAULT_RECONNECTION_RETRY_COUNT;
-        console.log('Connection with game server has been established');
-        $('#' + ROOT_NODE_ID + ' *').attr('disabled', false);
-    };
-    return adminSocket;
+    let controlGroups = new ControlGroups();
+    let rootNode = new AdminPanel(controlGroups.groups);
+    rootNode.init();
 }
 
 function showPlayers(players) {
@@ -125,235 +38,11 @@ function showPlayers(players) {
     }
 }
 
-function showStartStopButton(isRunning) {
-    startStopButton = document.getElementById(START_STOP_BUTTON_ID);
-    if (isRunning) {
-        startStopButton.innerText = 'Stop Game';
-        startStopButton.removeEventListener("click", handleStart);
-        startStopButton.addEventListener("click", handleStop);
-    } else {
-        startStopButton.innerText = 'Start Game';
-        startStopButton.removeEventListener("click", handleStop);
-        startStopButton.addEventListener("click", handleStart);
-    }
-}
-
-function handleStart() {
-    let startStopButton = document.getElementById(START_STOP_BUTTON_ID);
-    sendAdminCommand(
-        getCommandBody("start"),
-        () => {
-            console.log('Game has been started');
-            startStopButton.removeEventListener("click", handleStart);
-            startStopButton.addEventListener("click", handleStop);
-            startStopButton.innerText = "Stop Game"
-        }
-    )
-}
-
-function handleStop() {
-    let startStopButton = document.getElementById(START_STOP_BUTTON_ID);
-    sendAdminCommand(
-        getCommandBody("stop"),
-        () => {
-            console.log("Game has been stopped");
-            startStopButton.removeEventListener("click", handleStop);
-            startStopButton.addEventListener("click", handleStart);
-            startStopButton.innerText = "Start Game"
-        }
-    )
-}
-
-function showPauseResumeButton(isPaused, isRunning) {
-    pauseResumeButton = document.getElementById(PAUSE_RESUME_BUTTON_ID);
-    if (isPaused) {
-        pauseResumeButton.innerText = 'Resume Game';
-    } else {
-        pauseResumeButton.innerText = 'Pause Game';
-    }
-    pauseResumeButton.onclick = () => {
-        sendAdminCommand(
-            getCommandBody("pause_resume"),
-            console.log(pauseResumeButton.innerText)
-        )
-    };
-    pauseResumeButton.disabled = ! isRunning;
-}
-
-function getRegenerateBoardBlock() {
-    let blockDiv = document.createElement('div');
-    let regenerateBoardButton = document.createElement('button');
-    regenerateBoardButton.id = REGENERATE_BOARD_BUTTON_ID;
-    regenerateBoardButton.innerText = 'Regenerate Game Board';
-    regenerateBoardButton.onclick = () => {
-        sendAdminCommand(
-            getCommandBody(
-                "regenerate_game_board",
-                document.getElementById(BOARD_SIZE_SELECT_ID).value
-            ),
-            console.log("Game board has been regenerated")
-        )
-    };
-
-    let boardSizeSelect = document.createElement('select');
-    boardSizeSelect.id = BOARD_SIZE_SELECT_ID;
-    for(let idx = 0; idx < BOARD_BLOCKS_NUMBERS.length; idx++) {
-        let option = new Option(BOARD_BLOCKS_NUMBERS[idx], BOARD_BLOCKS_NUMBERS[idx]);
-        boardSizeSelect.appendChild(option);
-    }
-
-    blockDiv.appendChild(regenerateBoardButton);
-    blockDiv.appendChild(boardSizeSelect);
-    return blockDiv
-}
-
-function getGuardsControlBlock() {
-    let blockDiv = document.createElement('div');
-    updateGuardsNumberButton = document.createElement('button');
-    updateGuardsNumberButton.innerText = 'Update guards number';
-
-    updateGuardsNumberButton.onclick = () => {
-        sendAdminCommand(
-            getCommandBody(
-                "update_guards_number",
-                guardsNumberButton.innerText,
-                ),
-            console.log("Guards number has been updated")
-        )
-    };
-    let decreaseButton = document.createElement('button');
-    decreaseButton.innerText = '-';
-    decreaseButton.onclick = () => {
-        if (guardsNumberButton.innerText !== '0') {
-            guardsNumberButton.innerText = parseInt(guardsNumberButton.innerText) - 1;
-        }
-    };
-
-    guardsNumberButton = document.createElement('button');
-    guardsNumberButton.disabled = true;
-    let increaseButton = document.createElement('button');
-    increaseButton.innerText = '+';
-    increaseButton.onclick = () => {
-        guardsNumberButton.innerText = parseInt(guardsNumberButton.innerText) + 1;
-    };
-
-    blockDiv.appendChild(updateGuardsNumberButton);
-    blockDiv.appendChild(decreaseButton);
-    blockDiv.appendChild(guardsNumberButton);
-    blockDiv.appendChild(increaseButton);
-    return blockDiv
-}
-
-function getGoldControlBlock() {
-    let goldControlBlock = document.createElement('div');
-    updateGoldNumberButton = document.createElement('button');
-    updateGoldNumberButton.innerText = 'Update gold cells number';
-    updateGoldNumberButton.onclick = () => {
-        sendAdminCommand(
-            getCommandBody(
-                "update_gold_cells",
-                goldNumberButton.innerText,
-            ),
-            console.log("Gold cells have been re spawned")
-        )
-    };
-    let decreaseGoldNumberButton = document.createElement('button');
-    decreaseGoldNumberButton.innerText = '-';
-    decreaseGoldNumberButton.onclick = () => {
-        if (goldNumberButton.innerText !== '0') {
-            goldNumberButton.innerText = parseInt(goldNumberButton.innerText) - 1;
-        }
-    };
-
-    goldNumberButton = document.createElement('button');
-    let increaseGoldNumberButton = document.createElement('button');
-    increaseGoldNumberButton.innerText = '+';
-    increaseGoldNumberButton.onclick = () => {
-        goldNumberButton.innerText = parseInt(goldNumberButton.innerText) + 1;
-    };
-
-    goldControlBlock.appendChild(updateGoldNumberButton);
-    goldControlBlock.appendChild(decreaseGoldNumberButton);
-    goldControlBlock.appendChild(goldNumberButton);
-    goldControlBlock.appendChild(increaseGoldNumberButton);
-    return goldControlBlock
-}
-
-function getTickControlBlock() {
-    let tickTimeControlBlock = document.createElement('div');
-    updateTickTimeButton = document.createElement('button');
-    updateTickTimeButton.innerText = 'Update tick time, sec';
-    updateTickTimeButton.onclick = () => {
-        sendAdminCommand(
-            getCommandBody(
-                "set_tick_time",
-                parseFloat(tickTimeButton.innerText).toFixed(1)
-            ),
-            console.log("Tick time has been updated")
-        )
-    };
-    let decreaseTickTimeButton = document.createElement('button');
-    decreaseTickTimeButton.innerText = '-';
-    decreaseTickTimeButton.onclick = () => {
-        if (tickTimeButton.innerText !== '0.1') {
-            tickTimeButton.innerText = (parseFloat(tickTimeButton.innerText) - 0.1).toFixed(1);
-        }
-    };
-
-    tickTimeButton = document.createElement('button');
-    let increaseTickTimeButton = document.createElement('button');
-    increaseTickTimeButton.innerText = '+';
-    increaseTickTimeButton.onclick = () => {
-        tickTimeButton.innerText = (parseFloat(tickTimeButton.innerText) + 0.1).toFixed(1);
-    };
-
-    tickTimeControlBlock.appendChild(updateTickTimeButton);
-    tickTimeControlBlock.appendChild(decreaseTickTimeButton);
-    tickTimeControlBlock.appendChild(tickTimeButton);
-    tickTimeControlBlock.appendChild(increaseTickTimeButton);
-    return tickTimeControlBlock
-}
-
-function getTimeSpanControlBlock() {
-    let rootDiv = document.createElement('div');
-    let updateButton = document.createElement('button');
-    updateButton.innerText = 'Update timespan, sec';
-    updateButton.onclick = () => {
-        sendAdminCommand(
-            getCommandBody(
-                "set_session_timespan",
-                parseInt(timeSpanButton.innerText),
-            ),
-            console.log("Timespan has been updated")
-        )
-    };
-    let decreaseButton = document.createElement('button');
-    decreaseButton.innerText = '-';
-    decreaseButton.onclick = () => {
-        if (timeSpanButton.innerText !== '10') {
-            timeSpanButton.innerText = parseInt(timeSpanButton.innerText) - 10;
-        }
-    };
-
-    timeSpanButton = document.createElement('button');
-    let increaseButton = document.createElement('button');
-    increaseButton.innerText = '+';
-    increaseButton.onclick = () => {
-        timeSpanButton.innerText = parseInt(timeSpanButton.innerText) + 10;
-    };
-
-    rootDiv.appendChild(updateButton);
-    rootDiv.appendChild(decreaseButton);
-    rootDiv.appendChild(timeSpanButton);
-    rootDiv.appendChild(increaseButton);
-    return rootDiv
-}
-
 function getCommandBody(command, args) {
     return JSON.stringify({
-            "command": command,
-            "args": args
-        })
+        "command": command,
+        "args": args
+    })
 }
 
 function sendAdminCommand(body, callback) {
@@ -365,14 +54,292 @@ function sendAdminCommand(body, callback) {
         },
         body: body
     }).then(() => {
-        if(callback !== undefined) {
+        if (callback !== undefined) {
             callback()
         }
     }).catch(error => {
-        if(error) {
+        if (error) {
             console.error(error)
         }
     })
+}
+
+class ControlGroupArgs {
+    constructor(name, label, command, minValue, maxValue, stepValue) {
+        this.name = name;
+        this.label = label;
+        this.command = command;
+        this.minValue = minValue;
+        this.maxValue = maxValue;
+        this.stepValue = stepValue || minValue;
+    }
+}
+
+class ControlGroups {
+    constructor() {
+        this.groups = [];
+        this.init();
+    }
+
+    init() {
+        let durationGroupArgs = new ControlGroupArgs(
+            TIMESPAN,
+            "Update duration, sec",
+            "set_session_timespan",
+            10,
+            1800,
+            10,
+        );
+        let durationGroup = new ControlGroup(durationGroupArgs);
+        this.groups.push(durationGroup);
+
+        let boardRegenerationGroupArgs = new ControlGroupArgs(
+            SIZE,
+            "Regenerate Game Board",
+            "regenerate_game_board",
+            1,
+            6,
+            1
+        );
+        let boardRegenerationGroup = new ControlGroup(boardRegenerationGroupArgs);
+        this.groups.push(boardRegenerationGroup);
+
+        let GuardsControlGroupArgs = new ControlGroupArgs(
+            GUARDS,
+            "Update guards number",
+            "update_guards_number",
+            0,
+            10,
+            1
+        );
+        let GuardsControlGroup = new ControlGroup(GuardsControlGroupArgs);
+        this.groups.push(GuardsControlGroup);
+
+        let GoldControlGroupArgs = new ControlGroupArgs(
+            GOLD,
+            "Update gold number",
+            "update_gold_number",
+            0,
+            1000,
+            1
+        );
+        let GoldControlGroup = new ControlGroup(GoldControlGroupArgs);
+        this.groups.push(GoldControlGroup);
+
+        let TickControlGroupArgs = new ControlGroupArgs(
+            TICK,
+            "Update tick time, sec",
+            "set_tick_time",
+            0.1,
+            2,
+            0.1
+        );
+        let TickControlGroup = new ControlGroup(TickControlGroupArgs);
+        this.groups.push(TickControlGroup);
+    }
+}
+
+class AdminPanel {
+    constructor(controlGroups) {
+        this.controlGroups = controlGroups;
+        this.node = document.createElement("div");
+        this.node.id = ROOT_NODE_ID;
+        document.body.appendChild(this.node);
+        this.groupsInfo = {};
+        this.mainGroup = new MainGroup();
+        this.initAdminSocket = this.initAdminSocket.bind(this);
+        this.addControlGroups = this.addControlGroups.bind(this);
+        this.appendControlGroup = this.appendControlGroup.bind(this);
+    }
+
+    init() {
+        this.node.appendChild(this.mainGroup.node);
+        this.addControlGroups();
+        this.initAdminSocket()
+    }
+
+    addControlGroups() {
+        this.controlGroups.map(group => this.appendControlGroup(group));
+    }
+
+    update(sessionInfo) {
+        this.mainGroup.update(sessionInfo[IS_RUNNING], sessionInfo[IS_PAUSED], sessionInfo[TIMER]);
+        for (let key in this.groupsInfo) {
+            this.groupsInfo[key].updateValue(sessionInfo[key])
+        }
+    }
+
+    appendControlGroup(group) {
+        this.node.appendChild(group.node);
+        this.groupsInfo[group.name] = group;
+    }
+
+    initAdminSocket() {
+        let adminSocket = new WebSocket(ADMIN_SOCKET_URL);
+        adminSocket.onmessage = (event) => {
+            let sessionInfo = JSON.parse(event.data);
+            this.update(sessionInfo);
+        };
+        adminSocket.onclose = () => {
+            console.log('Connection with game server has been dropped');
+            $('#' + this.node.id + ' *').attr('disabled', true);
+            reconnectionRetryCount--;
+            if (reconnectionRetryCount > 0) {
+                setTimeout(this.initAdminSocket, RECONNECTION_RETRY_TIMEOUT)
+            } else {
+                console.log("Couldn't establish connection. Giving up");
+            }
+        };
+        adminSocket.onopen = () => {
+            reconnectionRetryCount = DEFAULT_RECONNECTION_RETRY_COUNT;
+            console.log('Connection with game server has been established');
+            $('#' + this.node.id + ' *').attr('disabled', false);
+        };
+        return adminSocket;
+    }
+}
+
+class MainGroup {
+    constructor() {
+        this.startStopToggleInfo = new ToggleInfo(
+            "Start Game",
+            "start",
+            "Stop Game",
+            "stop",
+        );
+        this.startStopButton = document.createElement('button');
+        this.startStopButton.onclick = this.toggle(this.startStopButton, this.startStopToggleInfo);
+
+        this.pauseResumeToggleInfo = new ToggleInfo(
+            "Resume Game",
+            "pause_resume",
+            "Pause Game",
+            "pause_resume",
+        );
+        this.pauseResumeButton = document.createElement('button');
+        this.pauseResumeButton.onclick = this.toggle(
+            this.pauseResumeButton,
+            this.pauseResumeToggleInfo
+        );
+        this.displayTimerButton = document.createElement('button');
+    }
+
+    update(isRunning, isPaused, timerValue) {
+        if (isRunning) {
+            this.startStopButton.innerText = this.startStopToggleInfo.offText
+        } else {
+            this.startStopButton.innerText = this.startStopToggleInfo.onText;
+        }
+
+        this.pauseResumeButton.disabled = !isRunning;
+        this.displayTimerButton.disabled = !isRunning;
+
+        if (isPaused) {
+            this.pauseResumeButton.innerText = this.pauseResumeToggleInfo.onText
+        } else {
+            this.pauseResumeButton.innerText = this.pauseResumeToggleInfo.offText
+        }
+        this.displayTimerButton.innerText = timerValue;
+    }
+
+    get node() {
+        let group = document.createElement('div');
+        group.appendChild(this.startStopButton);
+        group.appendChild(this.pauseResumeButton);
+        group.appendChild(this.displayTimerButton);
+        return group
+    }
+
+    toggle(element, toggleInfo) {
+        return () => {
+            let command, text;
+            if (element.innerText === toggleInfo.onText) {
+                command = toggleInfo.onCommand;
+                text = toggleInfo.offText;
+            } else {
+                command = toggleInfo.offCommand;
+                text = toggleInfo.onText;
+            }
+            sendAdminCommand(
+                getCommandBody(command),
+                () => {
+                    element.innerText = text
+                }
+            )
+        }
+    }
+}
+
+class ToggleInfo {
+    constructor(onText, onCommand, offText, offCommand) {
+        this.onText = onText;
+        this.onCommand = onCommand;
+        this.offText = offText;
+        this.offCommand = offCommand;
+    }
+}
+
+
+class ControlGroup {
+    constructor(groupArgs) {
+        this.name = groupArgs.name;
+        this.label = groupArgs.label;
+        this.command = groupArgs.command;
+        this.value = 0;
+        this.minValue = groupArgs.minValue;
+        this.maxValue = groupArgs.maxValue;
+        this.stepValue = groupArgs.stepValue || groupArgs.minValue;
+        this.valueButton = null;
+
+        this.updateValue = this.updateValue.bind(this);
+    }
+
+    get node() {
+        let group = document.createElement('div');
+        let updateButton = document.createElement('button');
+        updateButton.innerText = this.label;
+        let valueButton = document.createElement('button');
+        valueButton.innerText = this.value;
+        this.valueButton = valueButton;
+
+        updateButton.onclick = () => {
+            sendAdminCommand(
+                getCommandBody(
+                    this.command,
+                    parseInt(valueButton.innerText),
+                )
+            )
+        };
+        let decreaseButton = document.createElement('button');
+        decreaseButton.innerText = '-';
+        decreaseButton.onclick = () => {
+            if (valueButton.innerText !== this.minValue.toString()) {
+                valueButton.innerText = (
+                    parseInt(valueButton.innerText) - this.stepValue
+                ).toString();
+            }
+        };
+
+        let increaseButton = document.createElement('button');
+        increaseButton.innerText = '+';
+        increaseButton.onclick = () => {
+            if (valueButton.innerText !== this.maxValue.toString()) {
+                valueButton.innerText = (
+                    parseInt(valueButton.innerText) - this.stepValue
+                ).toString();
+            }
+        };
+        group.appendChild(updateButton);
+        group.appendChild(valueButton);
+        group.appendChild(decreaseButton);
+        group.appendChild(increaseButton);
+
+        return group
+    }
+
+    updateValue(value) {
+        this.valueButton.innerText = value
+    }
 }
 
 function getButtonWithImage(text, imageName) {
@@ -383,5 +350,4 @@ main();
 
 // TODO: add images to buttons
 // TODO: merge admin and spectator page
-// TODO: Implement classes
 // TODO: Implement ReactJS
