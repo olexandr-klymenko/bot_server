@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    </head>
+    <body>
+        <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+        <script src="{{ app.router.static.url_for(filename='js/reg.js') }}" type="text/javascript"></script>
+        <label>Name:</label>
+        <input id="user" name="user" type="text">
+        <button id="spectator" onclick="spectator()">Spectator</button>
+        <button id="play" onclick="check_user_name()">Play</button>
+    </body>
+</html>
